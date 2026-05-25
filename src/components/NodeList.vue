@@ -1,24 +1,27 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import { NBadge, NButton, NIcon, NList, NListItem, NModal, NProgress, NTag, NText, NTooltip, useThemeVars } from 'naive-ui'
+import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { ProgressThin } from '@/components/ui/progress-thin'
+import { Tag } from '@/components/ui/tag'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipX } from '@/components/ui/tooltip-x'
+import { useThemeVars } from '@/composables/useThemeVars'
 import { useAppStore } from '@/stores/app'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, parseTags } from '@/utils/tagHelper'
 
-const props = defineProps<{
-  nodes: NodeData[]
-}>()
+const props = defineProps<{ nodes: NodeData[] }>()
 
-const emit = defineEmits<{
-  click: [node: NodeData]
-}>()
+const emit = defineEmits<{ click: [node: NodeData] }>()
 
-// 检测是否为触摸设备（移动端）
 const isTouchDevice = computed(() => {
   if (typeof window === 'undefined')
     return false
@@ -26,15 +29,11 @@ const isTouchDevice = computed(() => {
 })
 
 const appStore = useAppStore()
-
-// 获取 Naive UI 主题变量
 const themeVars = useThemeVars()
 
-// 延迟图表弹窗状态
 const showPingChart = ref(false)
 const selectedNode = ref<NodeData | null>(null)
 
-// 排序状态
 const sortKey = ref<string>('')
 const sortDir = ref<1 | -1>(1)
 
@@ -48,7 +47,6 @@ function handleSort(col: string) {
   }
 }
 
-// 排序后的节点列表
 const sortedNodes = computed(() => {
   const nodes = [...props.nodes]
   const key = sortKey.value
@@ -57,8 +55,7 @@ const sortedNodes = computed(() => {
     return nodes
   return nodes.sort((a, b) => {
     switch (key) {
-      case 'status':
-        return dir * ((a.online ? 1 : 0) - (b.online ? 1 : 0))
+      case 'status': return dir * ((a.online ? 1 : 0) - (b.online ? 1 : 0))
       case 'region': {
         const va = (a.region || '').toLowerCase()
         const vb = (b.region || '').toLowerCase()
@@ -69,149 +66,84 @@ const sortedNodes = computed(() => {
         const vb = (b.name || '').toLowerCase()
         return dir * (va < vb ? -1 : va > vb ? 1 : 0)
       }
-      case 'uptime':
-        return dir * ((a.uptime ?? 0) - (b.uptime ?? 0))
+      case 'uptime': return dir * ((a.uptime ?? 0) - (b.uptime ?? 0))
       case 'os': {
         const va = (a.os || '').toLowerCase()
         const vb = (b.os || '').toLowerCase()
         return dir * (va < vb ? -1 : va > vb ? 1 : 0)
       }
-      case 'cpu':
-        return dir * ((a.cpu ?? 0) - (b.cpu ?? 0))
-      case 'mem':
-        return dir * ((a.ram ?? 0) / (a.mem_total || 1) - (b.ram ?? 0) / (b.mem_total || 1))
-      case 'disk':
-        return dir * ((a.disk ?? 0) / (a.disk_total || 1) - (b.disk ?? 0) / (b.disk_total || 1))
+      case 'cpu': return dir * ((a.cpu ?? 0) - (b.cpu ?? 0))
+      case 'mem': return dir * ((a.ram ?? 0) / (a.mem_total || 1) - (b.ram ?? 0) / (b.mem_total || 1))
+      case 'disk': return dir * ((a.disk ?? 0) / (a.disk_total || 1) - (b.disk ?? 0) / (b.disk_total || 1))
       case 'traffic':
-        return dir * (
-          ((a.net_out ?? 0) + (a.net_in ?? 0))
-          - ((b.net_out ?? 0) + (b.net_in ?? 0))
-        )
       case 'rate':
-        return dir * (
-          ((a.net_out ?? 0) + (a.net_in ?? 0))
-          - ((b.net_out ?? 0) + (b.net_in ?? 0))
-        )
-      default:
-        return 0
+        return dir * (((a.net_out ?? 0) + (a.net_in ?? 0)) - ((b.net_out ?? 0) + (b.net_in ?? 0)))
+      default: return 0
     }
   })
 })
 
-// 列可见性计算
 const columns = computed(() => appStore.listViewColumns)
 
-// 格式化函数
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
 
-// 动态生成 grid 样式，使用配置的列宽度和间距
 const gridStyle = computed(() => {
   const visibleColumns = columns.value
   const columnWidths = appStore.listColumnWidths
   const columnGap = appStore.listColumnGap
   const templateColumns = visibleColumns.map(col => columnWidths[col] || 'auto')
-  return {
-    gridTemplateColumns: templateColumns.join(' '),
-    gap: columnGap,
-  }
+  return { gridTemplateColumns: templateColumns.join(' '), gap: columnGap }
 })
 
 const offlineOverlayContentStyle = computed(() => {
   const statusIndex = columns.value.indexOf('status')
   const regionIndex = columns.value.indexOf('region')
   const nameIndex = columns.value.indexOf('name')
-
   const startColumn = nameIndex !== -1
     ? nameIndex + 1
     : regionIndex !== -1
       ? regionIndex + 2
       : statusIndex === -1 ? 1 : statusIndex + 2
-
-  return {
-    gridColumn: `${startColumn} / -1`,
-  }
+  return { gridColumn: `${startColumn} / -1` }
 })
 
 const offlineOverlayMaskStyle = computed(() => {
   const statusIndex = columns.value.indexOf('status')
-  return {
-    gridColumn: statusIndex === -1 ? '1 / -1' : `${statusIndex + 2} / -1`,
-  }
+  return { gridColumn: statusIndex === -1 ? '1 / -1' : `${statusIndex + 2} / -1` }
 })
 
 const offlineOverlayRegionStyle = computed(() => {
   const regionIndex = columns.value.indexOf('region')
-  if (regionIndex === -1) {
+  if (regionIndex === -1)
     return null
-  }
-
-  return {
-    gridColumn: `${regionIndex + 1} / span 1`,
-  }
+  return { gridColumn: `${regionIndex + 1} / span 1` }
 })
 
-// 获取列的内边距样式
 function getColumnPadding(col: string): Record<string, string> {
   const padding = appStore.listColumnPadding[col]
-  if (padding) {
-    return { padding }
-  }
-  return {}
+  return padding ? { padding } : {}
 }
 
-// 获取列的外边距样式
 function getColumnMargin(col: string): Record<string, string> {
   const margin = appStore.listColumnMargin[col]
-  if (margin) {
-    return { margin }
-  }
-  return {}
+  return margin ? { margin } : {}
 }
 
-// 获取列的完整样式（合并 padding 和 margin）
 function getColumnStyle(col: string): Record<string, string> {
-  return {
-    ...getColumnPadding(col),
-    ...getColumnMargin(col),
-  }
+  return { ...getColumnPadding(col), ...getColumnMargin(col) }
 }
 
-// 计算行高度样式
 const rowHeightStyle = computed(() => {
   const height = appStore.listRowHeight
-  if (height) {
-    return { height, minHeight: height }
-  }
-  return {}
+  return height ? { height, minHeight: height } : {}
 })
 
-// 是否启用背景模糊
-const hasBackgroundBlur = computed(() => {
-  return appStore.backgroundEnabled && appStore.cardBlurRadius > 0
-})
+const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 
-// 计算列表模糊半径类
-const listBlurClass = computed(() => {
-  if (!hasBackgroundBlur.value)
-    return ''
-  const radius = appStore.cardBlurRadius
-  if (radius <= 8)
-    return 'glass-8'
-  if (radius <= 12)
-    return 'glass-12'
-  if (radius <= 16)
-    return 'glass-16'
-  if (radius <= 20)
-    return 'glass-20'
-  return `glass-${radius}`
-})
-
-// 计算国旗图标路径
 function getFlagSrc(region: string): string {
-  const code = getRegionCode(region)
-  return `/images/flags/${code}.svg`
+  return `/images/flags/${getRegionCode(region)}.svg`
 }
 
 function handleClick(node: NodeData) {
@@ -223,56 +155,41 @@ function openPingChart(node: NodeData) {
   showPingChart.value = true
 }
 
-// 计算节点是否显示流量进度条
 function showTrafficProgress(node: NodeData): boolean {
   return node.traffic_limit > 0
 }
 
-// 计算流量使用百分比
 function getTrafficUsedPercentage(node: NodeData): number {
   if (node.traffic_limit <= 0)
     return 0
-
   const { net_total_up = 0, net_total_down = 0, traffic_limit_type } = node
   let used = 0
-
   switch (traffic_limit_type) {
-    case 'up':
-      used = net_total_up
+    case 'up': used = net_total_up
       break
-    case 'down':
-      used = net_total_down
+    case 'down': used = net_total_down
       break
-    case 'min':
-      used = Math.min(net_total_up, net_total_down)
+    case 'min': used = Math.min(net_total_up, net_total_down)
       break
-    case 'max':
-      used = Math.max(net_total_up, net_total_down)
+    case 'max': used = Math.max(net_total_up, net_total_down)
       break
     case 'sum':
     default:
       used = net_total_up + net_total_down
       break
   }
-
   return Math.min((used / node.traffic_limit) * 100, 100)
 }
 
-// 计算已用流量
 function getTrafficUsed(node: NodeData): number {
   const { net_total_up = 0, net_total_down = 0, traffic_limit_type } = node
   switch (traffic_limit_type) {
-    case 'up':
-      return net_total_up
-    case 'down':
-      return net_total_down
-    case 'min':
-      return Math.min(net_total_up, net_total_down)
-    case 'max':
-      return Math.max(net_total_up, net_total_down)
+    case 'up': return net_total_up
+    case 'down': return net_total_down
+    case 'min': return Math.min(net_total_up, net_total_down)
+    case 'max': return Math.max(net_total_up, net_total_down)
     case 'sum':
-    default:
-      return net_total_up + net_total_down
+    default: return net_total_up + net_total_down
   }
 }
 
@@ -280,59 +197,37 @@ function formatOfflineTime(node: NodeData): string {
   return formatDateTime(node.time)
 }
 
-// 根据过期状态获取颜色
 function getExpireBadgeColor(status: string): string {
   switch (status) {
     case 'expired':
-    case 'critical':
-      return '#E54D2E' // 红色
-    case 'warning':
-      return '#F97316' // 橙色
-    case 'long_term':
-      return '#8D8D8D' // 灰色
+    case 'critical': return '#E54D2E'
+    case 'warning': return '#F97316'
+    case 'long_term': return '#8D8D8D'
     case 'normal':
-    default:
-      return '#30A46C' // 绿色
+    default: return '#30A46C'
   }
 }
 
-// 计算节点的标签列表（返回颜色）
 function getNodeTags(node: NodeData): Array<{ text: string, color: string }> {
   const tags: Array<{ text: string, color: string }> = []
   const lang = appStore.lang
-
-  // 前两个标签：剩余天数和价格（price > 0 时显示）
   if (node.price !== 0) {
-    // 剩余天数标签
     const days = getDaysUntilExpired(node.expired_at)
     const status = getExpireStatus(node.expired_at)
     const color = getExpireBadgeColor(status)
-
-    if (status === 'expired') {
+    if (status === 'expired')
       tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired', color })
-    }
-    else if (status === 'long_term') {
+    else if (status === 'long_term')
       tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term', color })
-    }
-    else {
-      tags.push({ text: lang === 'zh-CN' ? `剩余 ${days} 天` : `${days} days left`, color })
-    }
-
-    // 价格标签
+    else tags.push({ text: lang === 'zh-CN' ? `剩余 ${days} 天` : `${days} days left`, color })
     const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
-    tags.push({ text: priceText, color: '#0090FF' }) // 蓝色
+    tags.push({ text: priceText, color: '#0090FF' })
   }
-
-  // 后续标签：从 tags 字段解析
   const customTags = parseTags(node.tags)
-  for (const tag of customTags) {
-    tags.push({ text: tag.text, color: tag.hex })
-  }
-
+  for (const tag of customTags) tags.push({ text: tag.text, color: tag.hex })
   return tags
 }
 
-// 列标题映射
 const columnTitles: Record<string, string> = {
   status: '状态',
   region: '地区',
@@ -346,22 +241,23 @@ const columnTitles: Record<string, string> = {
   traffic: '流量',
   rate: '速率',
 }
+
+function makeTagColor(hex: string) {
+  return { color: `${hex}20`, textColor: hex, borderColor: `${hex}40` }
+}
 </script>
 
 <template>
   <div class="node-list-wrapper">
-    <NList
-      hoverable
-      clickable
-      bordered
-      class="min-w-fit w-full"
-      :class="[
-        { 'light-list-contrast': appStore.lightCardContrast && !appStore.isDark },
-        { 'glass-list-enabled': hasBackgroundBlur },
-        listBlurClass,
-      ]"
-    >
-      <template #header>
+    <TooltipProvider :delay-duration="200">
+      <div
+        class="min-w-fit w-full rounded-md border bg-card"
+        :class="[
+          appStore.lightCardContrast && !appStore.isDark && 'light-list-contrast',
+          hasBackgroundBlur && 'glass-list-enabled glass-card',
+        ]"
+      >
+        <!-- 表头 -->
         <div class="node-list-header" :style="gridStyle">
           <template v-for="col in columns" :key="col">
             <div
@@ -370,241 +266,222 @@ const columnTitles: Record<string, string> = {
               class="sortable-header"
               @click="handleSort(col)"
             >
-              <NText :depth="3" class="text-xs">
+              <span class="text-xs text-muted-foreground">
                 {{ columnTitles[col] }}{{ sortKey === col ? (sortDir === 1 ? ' ↑' : ' ↓') : '' }}
-              </NText>
+              </span>
             </div>
           </template>
         </div>
-      </template>
-      <NListItem
-        v-for="node in sortedNodes"
-        :key="node.uuid"
-        class="node-list-row"
-        :class="{ 'node-list-row--offline': !node.online }"
-        :style="rowHeightStyle"
-        @click="handleClick(node)"
-      >
-        <div class="node-list-item" :style="gridStyle">
-          <template v-for="col in columns" :key="col">
-            <!-- 在线状态指示器 -->
-            <div v-if="col === 'status'" class="node-list-item__status" :style="getColumnStyle('status')">
-              <div class="flex gap-1 items-center">
-                <NTooltip v-if="appStore.showPingChartButton">
-                  <template #trigger>
-                    <NButton
-                      quaternary
-                      circle
-                      size="tiny"
-                      class="p-1!"
-                      @click.stop="openPingChart(node)"
+
+        <!-- 行 -->
+        <div
+          v-for="node in sortedNodes"
+          :key="node.uuid"
+          class="node-list-row cursor-pointer hover:bg-accent/40 transition-colors"
+          :class="{ 'node-list-row--offline': !node.online }"
+          :style="rowHeightStyle"
+          @click="handleClick(node)"
+        >
+          <div class="node-list-item" :style="gridStyle">
+            <template v-for="col in columns" :key="col">
+              <!-- 在线状态指示器 -->
+              <div v-if="col === 'status'" class="node-list-item__status" :style="getColumnStyle('status')">
+                <div class="flex gap-1 items-center">
+                  <TooltipX v-if="appStore.showPingChartButton">
+                    <template #trigger>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        class="p-1"
+                        @click.stop="openPingChart(node)"
+                      >
+                        <Icon icon="icon-park-outline:area-map" :width="14" :height="14" />
+                      </Button>
+                    </template>
+                    查看延迟图表
+                  </TooltipX>
+                  <Tag v-if="appStore.listStatusStyle === 'tag'" :type="node.online ? 'success' : 'error'" size="small">
+                    {{ node.online ? '在线' : '离线' }}
+                  </Tag>
+                  <Badge v-else :variant="node.online ? 'default' : 'destructive'">
+                    {{ node.online ? '在线' : '离线' }}
+                  </Badge>
+                </div>
+              </div>
+
+              <!-- 国旗 -->
+              <div v-else-if="col === 'region'" class="node-list-item__region" :style="getColumnStyle('region')">
+                <img
+                  :src="getFlagSrc(node.region)"
+                  :alt="getRegionDisplayName(node.region)"
+                  class="size-5 rounded-sm"
+                >
+              </div>
+
+              <!-- 节点名称 -->
+              <div v-else-if="col === 'name'" class="node-list-item__name" :style="getColumnStyle('name')">
+                <span class="text-sm font-semibold">{{ node.name }}</span>
+              </div>
+
+              <!-- 标签 -->
+              <div v-else-if="col === 'tags'" class="node-list-item__tags" :style="getColumnStyle('tags')">
+                <div class="flex flex-wrap gap-1 items-center">
+                  <template v-if="appStore.listTagsStyle === 'tag'">
+                    <Tag
+                      v-for="(tag, index) in getNodeTags(node)"
+                      :key="index"
+                      :color="makeTagColor(tag.color)"
+                      size="small"
                     >
-                      <template #icon>
-                        <div class="i-icon-park-outline-area-map text-sm" />
-                      </template>
-                    </NButton>
+                      {{ tag.text }}
+                    </Tag>
                   </template>
-                  查看延迟图表
-                </NTooltip>
-                <!-- 根据 listStatusStyle 配置选择显示方式 -->
-                <NTag v-if="appStore.listStatusStyle === 'tag'" :type="node.online ? 'success' : 'error'" size="small">
-                  {{ node.online ? '在线' : '离线' }}
-                </NTag>
-                <NBadge v-else :type="node.online ? 'success' : 'error'" :value="node.online ? '在线' : '离线'" />
-              </div>
-            </div>
-
-            <!-- 国旗 -->
-            <div v-else-if="col === 'region'" class="node-list-item__region" :style="getColumnStyle('region')">
-              <NIcon size="20">
-                <img :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)" class="rounded-sm">
-              </NIcon>
-            </div>
-
-            <!-- 节点名称 -->
-            <div v-else-if="col === 'name'" class="node-list-item__name" :style="getColumnStyle('name')">
-              <NText class="text-sm font-semibold">
-                {{ node.name }}
-              </NText>
-            </div>
-
-            <!-- 标签 -->
-            <div v-else-if="col === 'tags'" class="node-list-item__tags" :style="getColumnStyle('tags')">
-              <div class="flex flex-wrap gap-1 items-center">
-                <!-- 根据 listTagsStyle 配置选择显示方式 -->
-                <template v-if="appStore.listTagsStyle === 'tag'">
-                  <NTag
-                    v-for="(tag, index) in getNodeTags(node)"
-                    :key="index"
-                    :color="{ color: `${tag.color}20`, textColor: tag.color, borderColor: `${tag.color}40` }"
-                    size="small"
-                  >
-                    {{ tag.text }}
-                  </NTag>
-                </template>
-                <template v-else>
-                  <NBadge
-                    v-for="(tag, index) in getNodeTags(node)"
-                    :key="index"
-                    :color="tag.color"
-                    :value="tag.text"
-                  />
-                </template>
-              </div>
-            </div>
-
-            <!-- 运行时间 -->
-            <div v-else-if="col === 'uptime'" class="node-list-item__uptime" :style="getColumnStyle('uptime')">
-              <NText :depth="3" class="text-xs" :style="{ fontFamily: appStore.numberFontFamily }">
-                {{ formatUptime(node.uptime ?? 0) }}
-              </NText>
-            </div>
-
-            <!-- 操作系统 -->
-            <div v-else-if="col === 'os'" class="node-list-item__os" :style="getColumnStyle('os')">
-              <div class="flex gap-1 items-center">
-                <NIcon size="16">
-                  <img :src="getOSImage(node.os)" :alt="getOSName(node.os)">
-                </NIcon>
-                <NText :depth="3" class="text-xs">
-                  {{ getOSName(node.os) }}
-                </NText>
-              </div>
-            </div>
-
-            <!-- CPU -->
-            <div v-else-if="col === 'cpu'" class="node-list-item__cpu" :style="getColumnStyle('cpu')">
-              <div class="flex flex-col gap-0.5">
-                <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
-                  <NText>{{ (node.cpu ?? 0).toFixed(1) }}%</NText>
-                  <div class="flex-1" />
-                  <NText :depth="3">
-                    {{ node.load.toFixed(2) ?? 0 }}, {{ node.load5.toFixed(2) ?? 0 }}, {{ node.load15.toFixed(2) ?? 0 }}
-                  </NText>
-                </div>
-                <NProgress :show-indicator="false" :percentage="node.cpu ?? 0" :status="getStatus(node.cpu ?? 0)" :height="4" />
-              </div>
-            </div>
-
-            <!-- 内存 -->
-            <div v-else-if="col === 'mem'" class="node-list-item__mem" :style="getColumnStyle('mem')">
-              <div class="flex flex-col gap-0.5">
-                <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
-                  <NText>{{ ((node.ram ?? 0) / (node.mem_total || 1) * 100).toFixed(1) }}%</NText>
-                  <div class="flex-1" />
-                  <NText :depth="3">
-                    {{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}
-                  </NText>
-                </div>
-                <NProgress :show-indicator="false" :percentage="(node.ram ?? 0) / (node.mem_total || 1) * 100" :status="getStatus((node.ram ?? 0) / (node.mem_total || 1) * 100)" :height="4" />
-              </div>
-            </div>
-
-            <!-- 硬盘 -->
-            <div v-else-if="col === 'disk'" class="node-list-item__disk" :style="getColumnStyle('disk')">
-              <div class="flex flex-col gap-0.5">
-                <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
-                  <NText>{{ ((node.disk ?? 0) / (node.disk_total || 1) * 100).toFixed(1) }}%</NText>
-                  <div class="flex-1" />
-                  <NText :depth="3">
-                    {{ formatBytes(node.disk ?? 0) }} / {{ formatBytes(node.disk_total ?? 0) }}
-                  </NText>
-                </div>
-                <NProgress :show-indicator="false" :percentage="(node.disk ?? 0) / (node.disk_total || 1) * 100" :status="getStatus((node.disk ?? 0) / (node.disk_total || 1) * 100)" :height="4" />
-              </div>
-            </div>
-
-            <!-- 速率 -->
-            <div v-else-if="col === 'rate'" class="node-list-item__rate" :style="getColumnStyle('rate')">
-              <div class="text-[11px] flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
-                <NText>
-                  <span :style="{ color: themeVars.successColor }">↑{{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
-                </NText>
-                <NText>
-                  <span :style="{ color: themeVars.infoColor }">↓{{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
-                </NText>
-              </div>
-            </div>
-
-            <!-- 流量 -->
-            <div v-else-if="col === 'traffic'" class="node-list-item__traffic" :style="getColumnStyle('traffic')">
-              <div class="traffic-cell">
-                <NTooltip :trigger="isTouchDevice ? 'click' : 'hover'">
-                  <template #trigger>
-                    <div class="flex flex-col gap-0.5 w-full" :class="{ 'cursor-help': !isTouchDevice }" @click.stop>
-                      <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
-                        <NText v-if="showTrafficProgress(node)">{{ getTrafficUsedPercentage(node).toFixed(1) }}%</NText>
-                        <div class="flex-1" />
-                        <NText :depth="3">
-                          {{ formatBytes(getTrafficUsed(node)) }} / <template v-if="showTrafficProgress(node)">{{ formatBytes(node.traffic_limit) }}</template><template v-else>∞</template>
-                        </NText>
-                      </div>
-                      <!-- 统一使用 TrafficProgress 组件，自动根据类型选择颜色 -->
-                      <TrafficProgress
-                        :upload="node.net_total_up ?? 0"
-                        :download="node.net_total_down ?? 0"
-                        :traffic-limit="node.traffic_limit"
-                        :traffic-limit-type="(node.traffic_limit_type || 'sum')"
-                        height="4px"
-                      />
-                    </div>
+                  <template v-else>
+                    <Badge
+                      v-for="(tag, index) in getNodeTags(node)"
+                      :key="index"
+                      :style="{ backgroundColor: tag.color, color: '#fff' }"
+                    >
+                      {{ tag.text }}
+                    </Badge>
                   </template>
-                  <div class="text-[11px] flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
-                    <span><span :style="{ color: themeVars.successColor }">↑</span> {{ formatBytes(node.net_total_up ?? 0) }}</span>
-                    <span><span :style="{ color: themeVars.infoColor }">↓</span> {{ formatBytes(node.net_total_down ?? 0) }}</span>
+                </div>
+              </div>
+
+              <!-- 运行时间 -->
+              <div v-else-if="col === 'uptime'" class="node-list-item__uptime" :style="getColumnStyle('uptime')">
+                <span class="text-xs text-muted-foreground" :style="{ fontFamily: appStore.numberFontFamily }">
+                  {{ formatUptime(node.uptime ?? 0) }}
+                </span>
+              </div>
+
+              <!-- 操作系统 -->
+              <div v-else-if="col === 'os'" class="node-list-item__os" :style="getColumnStyle('os')">
+                <div class="flex gap-1 items-center">
+                  <img :src="getOSImage(node.os)" :alt="getOSName(node.os)" class="size-4">
+                  <span class="text-xs text-muted-foreground">{{ getOSName(node.os) }}</span>
+                </div>
+              </div>
+
+              <!-- CPU -->
+              <div v-else-if="col === 'cpu'" class="node-list-item__cpu" :style="getColumnStyle('cpu')">
+                <div class="flex flex-col gap-0.5">
+                  <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
+                    <span>{{ (node.cpu ?? 0).toFixed(1) }}%</span>
+                    <div class="flex-1" />
+                    <span class="text-muted-foreground">{{ node.load.toFixed(2) ?? 0 }}, {{ node.load5.toFixed(2) ?? 0 }}, {{ node.load15.toFixed(2) ?? 0 }}</span>
                   </div>
-                </NTooltip>
+                  <ProgressThin :percentage="node.cpu ?? 0" :status="getStatus(node.cpu ?? 0)" :height="4" />
+                </div>
               </div>
-            </div>
-          </template>
-        </div>
-        <div v-if="!node.online" class="node-offline-overlay" aria-hidden="true">
-          <div class="node-offline-overlay__grid" :style="gridStyle">
-            <div class="node-offline-overlay__mask" :style="offlineOverlayMaskStyle" />
-            <div v-if="offlineOverlayRegionStyle" class="node-offline-overlay__region" :style="offlineOverlayRegionStyle">
-              <NIcon size="18" class="node-offline-overlay__flag shrink-0">
-                <img :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)" class="rounded-sm">
-              </NIcon>
-            </div>
-            <div class="node-offline-overlay__content" :style="offlineOverlayContentStyle">
-              <NText class="node-offline-overlay__name text-sm font-semibold truncate">
-                {{ node.name }}
-              </NText>
-              <NText :depth="3" class="node-offline-overlay__time text-xs" :style="{ fontFamily: appStore.numberFontFamily }">
-                最后在线 {{ formatOfflineTime(node) }}
-              </NText>
+
+              <!-- 内存 -->
+              <div v-else-if="col === 'mem'" class="node-list-item__mem" :style="getColumnStyle('mem')">
+                <div class="flex flex-col gap-0.5">
+                  <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
+                    <span>{{ ((node.ram ?? 0) / (node.mem_total || 1) * 100).toFixed(1) }}%</span>
+                    <div class="flex-1" />
+                    <span class="text-muted-foreground">{{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}</span>
+                  </div>
+                  <ProgressThin :percentage="(node.ram ?? 0) / (node.mem_total || 1) * 100" :status="getStatus((node.ram ?? 0) / (node.mem_total || 1) * 100)" :height="4" />
+                </div>
+              </div>
+
+              <!-- 硬盘 -->
+              <div v-else-if="col === 'disk'" class="node-list-item__disk" :style="getColumnStyle('disk')">
+                <div class="flex flex-col gap-0.5">
+                  <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
+                    <span>{{ ((node.disk ?? 0) / (node.disk_total || 1) * 100).toFixed(1) }}%</span>
+                    <div class="flex-1" />
+                    <span class="text-muted-foreground">{{ formatBytes(node.disk ?? 0) }} / {{ formatBytes(node.disk_total ?? 0) }}</span>
+                  </div>
+                  <ProgressThin :percentage="(node.disk ?? 0) / (node.disk_total || 1) * 100" :status="getStatus((node.disk ?? 0) / (node.disk_total || 1) * 100)" :height="4" />
+                </div>
+              </div>
+
+              <!-- 速率 -->
+              <div v-else-if="col === 'rate'" class="node-list-item__rate" :style="getColumnStyle('rate')">
+                <div class="text-[11px] flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
+                  <span :style="{ color: themeVars.successColor }">↑{{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
+                  <span :style="{ color: themeVars.infoColor }">↓{{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
+                </div>
+              </div>
+
+              <!-- 流量 -->
+              <div v-else-if="col === 'traffic'" class="node-list-item__traffic" :style="getColumnStyle('traffic')">
+                <div class="traffic-cell">
+                  <TooltipX :trigger="isTouchDevice ? 'click' : 'hover'">
+                    <template #trigger>
+                      <div
+                        class="flex flex-col gap-0.5 w-full"
+                        :class="{ 'cursor-help': !isTouchDevice }"
+                        @click.stop
+                      >
+                        <div class="text-[11px] flex gap-1 items-center" :style="{ fontFamily: appStore.numberFontFamily }">
+                          <span v-if="showTrafficProgress(node)">{{ getTrafficUsedPercentage(node).toFixed(1) }}%</span>
+                          <div class="flex-1" />
+                          <span class="text-muted-foreground">
+                            {{ formatBytes(getTrafficUsed(node)) }} /
+                            <template v-if="showTrafficProgress(node)">{{ formatBytes(node.traffic_limit) }}</template>
+                            <template v-else>∞</template>
+                          </span>
+                        </div>
+                        <TrafficProgress
+                          :upload="node.net_total_up ?? 0"
+                          :download="node.net_total_down ?? 0"
+                          :traffic-limit="node.traffic_limit"
+                          :traffic-limit-type="(node.traffic_limit_type || 'sum')"
+                          height="4px"
+                        />
+                      </div>
+                    </template>
+                    <div class="text-[11px] flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
+                      <span><span :style="{ color: themeVars.successColor }">↑</span> {{ formatBytes(node.net_total_up ?? 0) }}</span>
+                      <span><span :style="{ color: themeVars.infoColor }">↓</span> {{ formatBytes(node.net_total_down ?? 0) }}</span>
+                    </div>
+                  </TooltipX>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div v-if="!node.online" class="node-offline-overlay" aria-hidden="true">
+            <div class="node-offline-overlay__grid" :style="gridStyle">
+              <div class="node-offline-overlay__mask" :style="offlineOverlayMaskStyle" />
+              <div v-if="offlineOverlayRegionStyle" class="node-offline-overlay__region" :style="offlineOverlayRegionStyle">
+                <img
+                  :src="getFlagSrc(node.region)"
+                  :alt="getRegionDisplayName(node.region)"
+                  class="size-4 rounded-sm shrink-0"
+                >
+              </div>
+              <div class="node-offline-overlay__content" :style="offlineOverlayContentStyle">
+                <span class="node-offline-overlay__name text-sm font-semibold truncate">{{ node.name }}</span>
+                <span class="node-offline-overlay__time text-xs text-muted-foreground" :style="{ fontFamily: appStore.numberFontFamily }">
+                  最后在线 {{ formatOfflineTime(node) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </NListItem>
-    </NList>
+      </div>
+    </TooltipProvider>
 
-    <!-- 延迟图表弹窗 -->
-    <NModal
-      v-model:show="showPingChart"
-      preset="card"
-      :title="selectedNode ? `${selectedNode.name} - 延迟监控` : '延迟监控'"
-      class="w-full sm:w-3/4"
-      :bordered="false"
-      :segmented="{ content: true, footer: 'soft' }"
-    >
-      <PingChart v-if="selectedNode" :uuid="selectedNode.uuid" />
-    </NModal>
+    <Dialog v-model:open="showPingChart">
+      <DialogContent class="max-w-[min(92vw,960px)]">
+        <DialogTitle class="text-base font-medium">
+          {{ selectedNode ? `${selectedNode.name} - 延迟监控` : '延迟监控' }}
+        </DialogTitle>
+        <PingChart v-if="selectedNode" :uuid="selectedNode.uuid" />
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .node-list-wrapper {
   overflow-x: auto;
   min-width: 0;
-}
-
-:deep(.n-list__header) {
-  padding: 0px !important;
-}
-
-:deep(.n-list-item) {
-  padding: 8px 16px !important;
 }
 
 .node-list-header,
@@ -613,9 +490,22 @@ const columnTitles: Record<string, string> = {
   align-items: center;
 }
 
+.node-list-header {
+  padding: 8px 16px;
+  background-color: hsl(var(--muted) / 0.4);
+  border-radius: var(--radius);
+  border-bottom: 1px solid var(--border);
+}
+
 .node-list-row {
   position: relative;
   overflow: hidden;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.node-list-row:last-child {
+  border-bottom: 0;
 }
 
 .node-offline-overlay {
@@ -646,7 +536,7 @@ const columnTitles: Record<string, string> = {
 .node-offline-overlay__mask {
   align-self: stretch;
   height: 100%;
-  background-color: color-mix(in srgb, var(--n-color) 76%, transparent);
+  background-color: color-mix(in srgb, var(--card) 76%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -680,28 +570,8 @@ const columnTitles: Record<string, string> = {
   max-width: min(40%, 280px);
 }
 
-.node-offline-overlay__flag {
-  flex-shrink: 0;
-}
-
-.node-offline-overlay__time {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.node-list-header {
-  padding: 8px 16px;
-  background-color: var(--n-color-hover);
-  border-radius: var(--n-border-radius);
-}
-
 .node-list-header__status,
-.node-list-item__status {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
+.node-list-item__status,
 .node-list-header__region,
 .node-list-item__region {
   display: flex;
@@ -710,20 +580,9 @@ const columnTitles: Record<string, string> = {
 }
 
 .node-list-header__name,
-.node-list-item__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+.node-list-item__name,
 .node-list-header__uptime,
-.node-list-item__uptime {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
-}
-
+.node-list-item__uptime,
 .node-list-header__os,
 .node-list-item__os {
   overflow: hidden;
@@ -736,20 +595,11 @@ const columnTitles: Record<string, string> = {
 .node-list-header__mem,
 .node-list-item__mem,
 .node-list-header__disk,
-.node-list-item__disk {
-  min-width: 0;
-}
-
+.node-list-item__disk,
 .node-list-header__traffic,
-.node-list-item__traffic {
-  min-width: 0;
-}
-
+.node-list-item__traffic,
 .node-list-header__rate,
-.node-list-item__rate {
-  min-width: 0;
-}
-
+.node-list-item__rate,
 .node-list-header__tags,
 .node-list-item__tags {
   min-width: 0;
@@ -758,10 +608,10 @@ const columnTitles: Record<string, string> = {
 .sortable-header {
   cursor: pointer;
   user-select: none;
+}
 
-  &:hover :deep(.n-text) {
-    opacity: 0.75;
-  }
+.sortable-header:hover {
+  opacity: 0.75;
 }
 
 .traffic-cell {
@@ -771,30 +621,16 @@ const columnTitles: Record<string, string> = {
   justify-content: center;
 }
 
-/* 亮色模式高对比度样式 */
 .light-list-contrast {
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
   border-color: rgba(0, 0, 0, 0.12);
-
-  :deep(.n-list-item) {
-    border-color: rgba(0, 0, 0, 0.08);
-  }
 }
 
-/* 毛玻璃列表样式 */
 .glass-list-enabled {
   background-color: rgba(255, 255, 255, 0.7) !important;
-
-  :deep(.n-list-item) {
-    background-color: rgba(255, 255, 255, 0.6);
-  }
 }
 
 html.dark .glass-list-enabled {
   background-color: rgba(24, 24, 28, 0.85) !important;
-
-  :deep(.n-list-item) {
-    background-color: rgba(24, 24, 28, 0.7);
-  }
 }
 </style>

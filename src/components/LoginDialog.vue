@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import type { FormInst } from 'naive-ui'
-import { NButton, NDivider, NForm, NFormItem, NInput, NInputOtp } from 'naive-ui'
-
-import { ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import { computed, ref } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { PinInput, PinInputGroup, PinInputSlot } from '@/components/ui/pin-input'
+import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/stores/app'
 import { ApiError, getSharedApi } from '@/utils/api'
 import { reconnectAfterLogin } from '@/utils/init'
@@ -18,8 +21,6 @@ const emit = defineEmits<{
 const appStore = useAppStore()
 const api = getSharedApi()
 
-const formRef = ref<FormInst | undefined>()
-
 const form = ref({
   username: '',
   password: '',
@@ -27,44 +28,34 @@ const form = ref({
 
 const loading = ref(false)
 const showOtpDialog = ref(false)
-const otpCode = ref<string[]>(['', '', '', '', '', ''])
+const otpCode = ref<(string | number)[]>([])
 const otpLoading = ref(false)
 
-const onlyAllowNumber = (value: string) => !value || /^\d+$/.test(value)
+const usernameError = ref('')
+const passwordError = ref('')
 
-const rules = ref({
-  username: [{ required: true, message: '请输入用户名', trigger: ['blur'] }],
-  password: [{ required: true, message: '请输入密码', trigger: ['blur'] }],
-})
+function validate(): boolean {
+  usernameError.value = form.value.username.trim() ? '' : '请输入用户名'
+  passwordError.value = form.value.password ? '' : '请输入密码'
+  return !usernameError.value && !passwordError.value
+}
 
 async function handleLogin() {
-  try {
-    await formRef.value?.validate()
-  }
-  catch {
+  if (!validate())
     return
-  }
-
   loading.value = true
-
   try {
     await api.login(form.value.username, form.value.password)
-
-    // 登录成功
     window.$message?.success('登录成功')
-
     if (props.forceLogin) {
-      // 强制登录模式：触发事件让父组件处理后续流程
       emit('loginSuccess')
     }
     else {
-      // 普通登录：重新连接 WebSocket
       await reconnectAfterLogin()
       window.$modal?.destroyAll()
     }
   }
   catch (error) {
-    // 检查是否需要 2FA 验证
     if (error instanceof ApiError) {
       const msg = error.message.toLowerCase()
       if (msg.includes('2fa') || msg.includes('2fa code') || msg.includes('two factor')) {
@@ -86,21 +77,14 @@ async function handleOtpSubmit() {
     window.$message?.warning('请输入 6 位验证码')
     return
   }
-
   otpLoading.value = true
-
   try {
     await api.login(form.value.username, form.value.password, code)
-
-    // 登录成功
     window.$message?.success('登录成功')
-
     if (props.forceLogin) {
-      // 强制登录模式：触发事件让父组件处理后续流程
       emit('loginSuccess')
     }
     else {
-      // 普通登录：重新连接 WebSocket
       await reconnectAfterLogin()
       window.$modal?.destroyAll()
     }
@@ -108,7 +92,7 @@ async function handleOtpSubmit() {
   catch (error) {
     console.error('[LoginDialog] OTP error:', error)
     window.$message?.error('验证码错误，请重试')
-    otpCode.value = ['', '', '', '', '', '']
+    otpCode.value = []
   }
   finally {
     otpLoading.value = false
@@ -118,71 +102,81 @@ async function handleOtpSubmit() {
 function handleOAuth2Login() {
   location.href = '/api/oauth'
 }
+
+const oauthEnabled = computed(() => Boolean((appStore.publicSettings as Record<string, unknown> | undefined)?.oauth_enable))
 </script>
 
 <template>
   <div class="w-full">
-    <!-- 登录表单 -->
-    <div v-if="!showOtpDialog" class="flex flex-col">
-      <NForm ref="formRef" :model="form" :rules="rules" class="w-full">
-        <NFormItem label="用户名" path="username">
-          <NInput v-model:value="form.username" placeholder="请输入用户名" :disabled="loading" />
-        </NFormItem>
-        <NFormItem label="密码" path="password">
-          <NInput
-            v-model:value="form.password"
+    <div v-if="!showOtpDialog" class="flex flex-col gap-4">
+      <form class="flex flex-col gap-3" @submit.prevent="handleLogin">
+        <div class="flex flex-col gap-1.5">
+          <Label for="username">用户名</Label>
+          <Input
+            id="username"
+            v-model="form.username"
+            placeholder="请输入用户名"
+            :disabled="loading"
+            autocomplete="username"
+          />
+          <span v-if="usernameError" class="text-xs text-destructive">{{ usernameError }}</span>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <Label for="password">密码</Label>
+          <Input
+            id="password"
+            v-model="form.password"
             type="password"
             placeholder="请输入密码"
             :disabled="loading"
+            autocomplete="current-password"
             @keydown.enter="handleLogin"
           />
-        </NFormItem>
-      </NForm>
-      <NButton type="primary" :loading="loading" block @click="handleLogin">
-        <template #icon>
-          <div class="i-icon-park-outline-login" />
-        </template>
-        登录
-      </NButton>
+          <span v-if="passwordError" class="text-xs text-destructive">{{ passwordError }}</span>
+        </div>
+        <Button type="submit" :disabled="loading" class="w-full">
+          <Icon icon="icon-park-outline:login" :width="16" :height="16" />
+          {{ loading ? '登录中...' : '登录' }}
+        </Button>
+      </form>
+
+      <template v-if="oauthEnabled">
+        <Separator />
+        <Button variant="outline" class="w-full" @click="handleOAuth2Login">
+          <Icon icon="icon-park-outline:outbound" :width="16" :height="16" />
+          使用 OAuth2 登录
+        </Button>
+      </template>
     </div>
 
-    <!-- OTP 验证表单 -->
-    <div v-else class="flex flex-col gap-4 w-full items-center overflow-x-auto">
+    <div v-else class="flex flex-col gap-4 w-full items-center">
       <div class="text-center">
         <div class="text-lg font-medium mb-2">
           两步验证
         </div>
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-muted-foreground">
           请输入验证器中的 6 位数字验证码
         </div>
       </div>
-      <NInputOtp
-        v-model:value="otpCode"
-        :length="6"
+      <PinInput
+        v-model="(otpCode as any)"
         :disabled="otpLoading"
-        :allow-input="onlyAllowNumber"
-        @keydown.enter="handleOtpSubmit"
-      />
+        type="number"
+        :length="6"
+        @complete="handleOtpSubmit"
+      >
+        <PinInputGroup>
+          <PinInputSlot v-for="(_, i) in 6" :key="i" :index="i" />
+        </PinInputGroup>
+      </PinInput>
       <div class="flex gap-2 w-full">
-        <NButton quaternary :disabled="otpLoading" @click="showOtpDialog = false">
+        <Button variant="ghost" :disabled="otpLoading" @click="showOtpDialog = false">
           返回
-        </NButton>
-        <NButton type="primary" class="flex-1" :loading="otpLoading" @click="handleOtpSubmit">
-          验证
-        </NButton>
+        </Button>
+        <Button class="flex-1" :disabled="otpLoading" @click="handleOtpSubmit">
+          {{ otpLoading ? '验证中...' : '验证' }}
+        </Button>
       </div>
     </div>
-
-    <template v-if="!showOtpDialog && appStore.publicSettings?.oauth_enable">
-      <NDivider />
-      <div class="flex flex-col">
-        <NButton block @click="handleOAuth2Login">
-          <template #icon>
-            <div class="i-icon-park-outline-outbound" />
-          </template>
-          使用 OAuth2 登录
-        </NButton>
-      </div>
-    </template>
   </div>
 </template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useNow } from '@vueuse/core'
-import { NCard, NText } from 'naive-ui'
 import { computed } from 'vue'
+import { CardX } from '@/components/ui/card-x'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
@@ -9,11 +10,9 @@ import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
 
-// 使用 VueUse 的 useNow 自动管理定时器，每秒更新
 const now = useNow({ interval: 1000 })
 const currentTime = computed(() => now.value.toLocaleString())
 
-/** 计算所有在线节点的实时速率总和 */
 const totalSpeed = computed(() => {
   const onlineNodes = nodesStore.nodes.filter(node => node.online)
   const up = onlineNodes.reduce((sum, node) => sum + (node.net_out || 0), 0)
@@ -21,256 +20,202 @@ const totalSpeed = computed(() => {
   return { up, down }
 })
 
-/** 计算所有节点的累积流量总和 */
 const totalTraffic = computed(() => {
   const up = nodesStore.nodes.reduce((sum, node) => sum + (node.net_total_up || 0), 0)
   const down = nodesStore.nodes.reduce((sum, node) => sum + (node.net_total_down || 0), 0)
   return { up, down }
 })
 
-/** 在线区域数量 */
-const onlineRegionCount = computed(() => {
-  return new Set(
-    nodesStore.nodes
-      .filter(node => node.online && node.region !== '')
-      .map(node => node.region),
-  ).size
-})
+const onlineRegionCount = computed(() => new Set(
+  nodesStore.nodes.filter(node => node.online && node.region !== '').map(node => node.region),
+).size)
 
-/** 在线节点数量 */
 const onlineNodeCount = computed(() => nodesStore.nodes.filter(node => node.online).length)
 
-// 格式化流量（使用配置，返回分离的数值和单位）
 const formattedTrafficUp = computed(() => formatBytesSplit(totalTraffic.value.up, appStore.byteDecimals))
 const formattedTrafficDown = computed(() => formatBytesSplit(totalTraffic.value.down, appStore.byteDecimals))
 
-// 格式化速率（使用配置，返回分离的数值和单位）
 const formattedSpeedUp = computed(() => formatBytesPerSecondSplit(totalSpeed.value.up, appStore.byteDecimals))
 const formattedSpeedDown = computed(() => formatBytesPerSecondSplit(totalSpeed.value.down, appStore.byteDecimals))
 
-// 是否启用背景模糊
-const hasBackgroundBlur = computed(() => {
-  return appStore.backgroundEnabled && appStore.cardBlurRadius > 0
-})
+const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 
-// 计算卡片模糊半径类
-const cardBlurClass = computed(() => {
-  if (!hasBackgroundBlur.value)
-    return ''
-  const radius = appStore.cardBlurRadius
-  if (radius <= 8)
-    return 'glass-8'
-  if (radius <= 12)
-    return 'glass-12'
-  if (radius <= 16)
-    return 'glass-16'
-  if (radius <= 20)
-    return 'glass-20'
-  return `glass-${radius}`
-})
+const numberFontStyle = computed(() => ({ fontFamily: appStore.numberFontFamily }))
 </script>
 
 <template>
-  <div class="general-info p-4 flex flex-col gap-2 sm:p-4 sm:gap-4 lg:grid lg:grid-cols-5" :class="{ 'light-general-contrast': appStore.lightCardContrast && !appStore.isDark }">
+  <div
+    class="general-info p-4 flex flex-col gap-2 sm:p-4 sm:gap-4 lg:grid lg:grid-cols-5"
+    :class="{ 'light-general-contrast': appStore.lightCardContrast && !appStore.isDark }"
+  >
     <!-- 当前时间 -->
-    <NCard hoverable class="sm:min-h-32" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, cardBlurClass]" content-class="h-full">
-      <!-- 移动端单行显示 -->
-      <div class="flex gap-2 items-center justify-between sm:hidden" :style="{ fontFamily: appStore.numberFontFamily }">
-        <NText :depth="3" class="text-xs flex shrink-0 gap-1 items-center">
-          <div class="i-icon-park-outline-time" />
+    <CardX hoverable class="sm:min-h-32" :class="[hasBackgroundBlur && 'glass-card-enabled glass-card']" content-class="h-full">
+      <div class="flex gap-2 items-center justify-between sm:hidden" :style="numberFontStyle">
+        <span class="text-xs flex shrink-0 gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:time" :width="14" :height="14" />
           当前时间
-        </NText>
-        <NText class="text-base font-bold m-0">
-          {{ currentTime }}
-        </NText>
+        </span>
+        <span class="text-base font-bold">{{ currentTime }}</span>
       </div>
-      <!-- 桌面端垂直布局 -->
       <div class="flex-col h-full hidden justify-between sm:flex">
-        <div :style="{ fontFamily: appStore.numberFontFamily }">
-          <NText class="text-2xl font-bold m-0">
-            {{ currentTime }}
-          </NText>
+        <div :style="numberFontStyle">
+          <span class="text-2xl font-bold">{{ currentTime }}</span>
         </div>
-        <NText :depth="3" class="text-xs flex gap-1 items-center">
-          <div class="i-icon-park-outline-time" />
+        <span class="text-xs flex gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:time" :width="14" :height="14" />
           当前时间
-        </NText>
+        </span>
       </div>
-    </NCard>
+    </CardX>
 
     <!-- 在线节点 -->
-    <NCard hoverable class="sm:min-h-32" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, cardBlurClass]" content-class="h-full">
-      <!-- 移动端单行显示 -->
-      <div class="flex gap-2 items-center justify-between sm:hidden" :style="{ fontFamily: appStore.numberFontFamily }">
-        <NText :depth="3" class="text-xs flex shrink-0 gap-1 items-center">
-          <div class="i-icon-park-outline-heartbeat" />
+    <CardX hoverable class="sm:min-h-32" :class="[hasBackgroundBlur && 'glass-card-enabled glass-card']" content-class="h-full">
+      <div class="flex gap-2 items-center justify-between sm:hidden" :style="numberFontStyle">
+        <span class="text-xs flex shrink-0 gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:heartbeat" :width="14" :height="14" />
           在线节点
-        </NText>
+        </span>
         <div class="flex items-baseline">
-          <NText class="text-base font-bold m-0">
-            {{ onlineNodeCount }}
-          </NText>
-          <NText :depth="3" class="text-xs m-0 p-1">
-            /
-          </NText>
-          <NText :depth="3" class="text-xs m-0">
-            {{ nodesStore.nodes.length }}
-          </NText>
+          <span class="text-base font-bold">{{ onlineNodeCount }}</span>
+          <span class="text-xs px-1 text-muted-foreground">/</span>
+          <span class="text-xs text-muted-foreground">{{ nodesStore.nodes.length }}</span>
         </div>
       </div>
-      <!-- 桌面端垂直布局 -->
       <div class="flex-col h-full hidden justify-between sm:flex">
-        <div :style="{ fontFamily: appStore.numberFontFamily }">
-          <NText class="text-2xl font-bold m-0">
-            {{ onlineNodeCount }}
-          </NText>
-          <NText :depth="3" class="text-xs m-0 p-1">
-            /
-          </NText>
-          <NText :depth="3" class="text-xs m-0">
-            {{ nodesStore.nodes.length }}
-          </NText>
+        <div :style="numberFontStyle">
+          <span class="text-2xl font-bold">{{ onlineNodeCount }}</span>
+          <span class="text-xs px-1 text-muted-foreground">/</span>
+          <span class="text-xs text-muted-foreground">{{ nodesStore.nodes.length }}</span>
         </div>
-        <NText :depth="3" class="text-xs flex gap-1 items-center">
-          <div class="i-icon-park-outline-heartbeat" />
+        <span class="text-xs flex gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:heartbeat" :width="14" :height="14" />
           在线节点
-        </NText>
+        </span>
       </div>
-    </NCard>
+    </CardX>
 
     <!-- 点亮区域 -->
-    <NCard hoverable class="sm:min-h-32" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, cardBlurClass]" content-class="h-full">
-      <!-- 移动端单行显示 -->
-      <div class="flex gap-2 items-center justify-between sm:hidden" :style="{ fontFamily: appStore.numberFontFamily }">
-        <NText :depth="3" class="text-xs flex shrink-0 gap-1 items-center">
-          <div class="i-icon-park-outline-world" />
+    <CardX hoverable class="sm:min-h-32" :class="[hasBackgroundBlur && 'glass-card-enabled glass-card']" content-class="h-full">
+      <div class="flex gap-2 items-center justify-between sm:hidden" :style="numberFontStyle">
+        <span class="text-xs flex shrink-0 gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:world" :width="14" :height="14" />
           点亮区域
-        </NText>
-        <NText class="text-base font-bold m-0">
-          {{ onlineRegionCount }}
-        </NText>
+        </span>
+        <span class="text-base font-bold">{{ onlineRegionCount }}</span>
       </div>
-      <!-- 桌面端垂直布局 -->
       <div class="flex-col h-full hidden justify-between sm:flex">
-        <div :style="{ fontFamily: appStore.numberFontFamily }">
-          <NText class="text-2xl font-bold m-0">
-            {{ onlineRegionCount }}
-          </NText>
+        <div :style="numberFontStyle">
+          <span class="text-2xl font-bold">{{ onlineRegionCount }}</span>
         </div>
-        <NText :depth="3" class="text-xs flex gap-1 items-center">
-          <div class="i-icon-park-outline-world" />
+        <span class="text-xs flex gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:world" :width="14" :height="14" />
           点亮区域
-        </NText>
+        </span>
       </div>
-    </NCard>
+    </CardX>
 
     <!-- 流量总览 -->
-    <NCard hoverable class="sm:min-h-32" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, cardBlurClass]" content-class="h-full">
-      <!-- 移动端单行显示 -->
-      <div class="flex gap-2 items-center justify-between sm:hidden" :style="{ fontFamily: appStore.numberFontFamily }">
-        <NText :depth="3" class="text-xs flex shrink-0 gap-1 items-center">
-          <div class="i-icon-park-outline-transfer-data" />
+    <CardX hoverable class="sm:min-h-32" :class="[hasBackgroundBlur && 'glass-card-enabled glass-card']" content-class="h-full">
+      <div class="flex gap-2 items-center justify-between sm:hidden" :style="numberFontStyle">
+        <span class="text-xs flex shrink-0 gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:transfer-data" :width="14" :height="14" />
           流量总览
-        </NText>
+        </span>
         <div class="flex gap-3">
           <div class="flex gap-0.5 items-baseline">
-            <div class="i-icon-park-outline-upload text-xs self-center" />
+            <Icon icon="icon-park-outline:upload" :width="12" :height="12" class="self-center" />
             <span class="text-sm font-bold">{{ formattedTrafficUp.value }}</span>
-            <span class="text-[10px] text-[--n-text-color-3]">{{ formattedTrafficUp.unit }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ formattedTrafficUp.unit }}</span>
           </div>
           <div class="flex gap-0.5 items-baseline">
-            <div class="i-icon-park-outline-download text-xs self-center" />
+            <Icon icon="icon-park-outline:download" :width="12" :height="12" class="self-center" />
             <span class="text-sm font-bold">{{ formattedTrafficDown.value }}</span>
-            <span class="text-[10px] text-[--n-text-color-3]">{{ formattedTrafficDown.unit }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ formattedTrafficDown.unit }}</span>
           </div>
         </div>
       </div>
-      <!-- 桌面端垂直布局 -->
       <div class="flex-col h-full hidden justify-between sm:flex">
-        <div class="flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
+        <div class="flex flex-col gap-1" :style="numberFontStyle">
           <div class="flex gap-1 items-baseline">
-            <div class="i-icon-park-outline-upload text-base shrink-0 self-center" />
+            <Icon icon="icon-park-outline:upload" :width="16" :height="16" class="shrink-0 self-center" />
             <span class="text-xl font-bold">{{ formattedTrafficUp.value }}</span>
-            <span class="text-xs text-[--n-text-color-3]">{{ formattedTrafficUp.unit }}</span>
+            <span class="text-xs text-muted-foreground">{{ formattedTrafficUp.unit }}</span>
           </div>
           <div class="flex gap-1 items-baseline">
-            <div class="i-icon-park-outline-download text-base shrink-0 self-center" />
+            <Icon icon="icon-park-outline:download" :width="16" :height="16" class="shrink-0 self-center" />
             <span class="text-xl font-bold">{{ formattedTrafficDown.value }}</span>
-            <span class="text-xs text-[--n-text-color-3]">{{ formattedTrafficDown.unit }}</span>
+            <span class="text-xs text-muted-foreground">{{ formattedTrafficDown.unit }}</span>
           </div>
         </div>
-        <NText :depth="3" class="text-xs flex gap-1 items-center">
-          <div class="i-icon-park-outline-transfer-data" />
+        <span class="text-xs flex gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:transfer-data" :width="14" :height="14" />
           流量总览
-        </NText>
+        </span>
       </div>
-    </NCard>
+    </CardX>
 
     <!-- 网络速率 -->
-    <NCard hoverable class="sm:min-h-32" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, cardBlurClass]" content-class="h-full">
-      <!-- 移动端单行显示 -->
-      <div class="flex gap-2 items-center justify-between sm:hidden" :style="{ fontFamily: appStore.numberFontFamily }">
-        <NText :depth="3" class="text-xs flex shrink-0 gap-1 items-center">
-          <div class="i-icon-park-outline-lightning" />
+    <CardX hoverable class="sm:min-h-32" :class="[hasBackgroundBlur && 'glass-card-enabled glass-card']" content-class="h-full">
+      <div class="flex gap-2 items-center justify-between sm:hidden" :style="numberFontStyle">
+        <span class="text-xs flex shrink-0 gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:lightning" :width="14" :height="14" />
           网络速率
-        </NText>
+        </span>
         <div class="flex gap-3">
           <div class="flex gap-0.5 items-baseline">
-            <div class="i-icon-park-outline-up text-xs self-center" />
+            <Icon icon="icon-park-outline:up" :width="12" :height="12" class="self-center" />
             <span class="text-sm font-bold">{{ formattedSpeedUp.value }}</span>
-            <span class="text-[10px] text-[--n-text-color-3]">{{ formattedSpeedUp.unit }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ formattedSpeedUp.unit }}</span>
           </div>
           <div class="flex gap-0.5 items-baseline">
-            <div class="i-icon-park-outline-down text-xs self-center" />
+            <Icon icon="icon-park-outline:down" :width="12" :height="12" class="self-center" />
             <span class="text-sm font-bold">{{ formattedSpeedDown.value }}</span>
-            <span class="text-[10px] text-[--n-text-color-3]">{{ formattedSpeedDown.unit }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ formattedSpeedDown.unit }}</span>
           </div>
         </div>
       </div>
-      <!-- 桌面端垂直布局 -->
       <div class="flex-col h-full hidden justify-between sm:flex">
-        <div class="flex flex-col gap-1" :style="{ fontFamily: appStore.numberFontFamily }">
+        <div class="flex flex-col gap-1" :style="numberFontStyle">
           <div class="flex gap-1 items-baseline">
-            <div class="i-icon-park-outline-up text-base shrink-0 self-center" />
+            <Icon icon="icon-park-outline:up" :width="16" :height="16" class="shrink-0 self-center" />
             <span class="text-xl font-bold">{{ formattedSpeedUp.value }}</span>
-            <span class="text-xs text-[--n-text-color-3]">{{ formattedSpeedUp.unit }}</span>
+            <span class="text-xs text-muted-foreground">{{ formattedSpeedUp.unit }}</span>
           </div>
           <div class="flex gap-1 items-baseline">
-            <div class="i-icon-park-outline-down text-base shrink-0 self-center" />
+            <Icon icon="icon-park-outline:down" :width="16" :height="16" class="shrink-0 self-center" />
             <span class="text-xl font-bold">{{ formattedSpeedDown.value }}</span>
-            <span class="text-xs text-[--n-text-color-3]">{{ formattedSpeedDown.unit }}</span>
+            <span class="text-xs text-muted-foreground">{{ formattedSpeedDown.unit }}</span>
           </div>
         </div>
-        <NText :depth="3" class="text-xs flex gap-1 items-center">
-          <div class="i-icon-park-outline-lightning" />
+        <span class="text-xs flex gap-1 items-center text-muted-foreground">
+          <Icon icon="icon-park-outline:lightning" :width="14" :height="14" />
           网络速率
-        </NText>
+        </span>
       </div>
-    </NCard>
+    </CardX>
   </div>
 </template>
 
-<style scoped lang="scss">
-.light-general-contrast :deep(.n-card) {
+<style scoped>
+.light-general-contrast :deep(> div) {
   background-color: rgba(250, 250, 252, 1) !important;
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
   border-color: rgba(0, 0, 0, 0.12);
 }
 
-/* 毛玻璃卡片样式 */
 .glass-card-enabled {
   background-color: rgba(255, 255, 255, 0.7) !important;
+}
 
-  &:hover {
-    filter: brightness(0.95);
-  }
+.glass-card-enabled:hover {
+  filter: brightness(0.95);
 }
 
 html.dark .glass-card-enabled {
   background-color: rgba(24, 24, 28, 0.85) !important;
+}
 
-  &:hover {
-    filter: brightness(1.1);
-  }
+html.dark .glass-card-enabled:hover {
+  filter: brightness(1.1);
 }
 </style>

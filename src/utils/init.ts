@@ -138,14 +138,9 @@ class InitManager {
       title: '登录',
       preset: 'dialog',
       showIcon: false,
-      closeOnEsc: false,
-      maskClosable: false,
-      closable: false,
-      autoFocus: true,
       content: () => h(LoginDialog, {
         forceLogin: true,
         onLoginSuccess: () => {
-          // 登录成功后重新初始化
           this.reinitAfterForceLogin()
         },
       }),

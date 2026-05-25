@@ -1,228 +1,217 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useDebounceFn } from '@vueuse/core'
-import { NAlert, NDivider, NEmpty, NInput, NRadioButton, NRadioGroup, NTabPane, NTabs } from 'naive-ui'
 import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Empty } from '@/components/ui/empty'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { isRegionMatch } from '@/utils/regionHelper'
 
-// 定义组件名称，用于 KeepAlive 匹配
-defineOptions({
-  name: 'HomeView',
-})
+defineOptions({ name: 'HomeView' })
 
-// 异步组件：按需加载，减少首屏体积
 const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
 
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
-
 const router = useRouter()
 
-// 组件激活时恢复滚动位置
 onActivated(() => {
   if (appStore.homeScrollPosition > 0) {
-    // 使用 nextTick 确保 DOM 已渲染完成后再恢复滚动
     nextTick(() => {
       window.scrollTo({ top: appStore.homeScrollPosition, behavior: 'instant' })
     })
   }
 })
 
-// 组件失活时保存滚动位置
 onDeactivated(() => {
   appStore.homeScrollPosition = window.scrollY
 })
 
 const searchText = ref('')
-// 防抖后的搜索文本
 const debouncedSearchText = ref('')
 
-// 使用 VueUse 的 useDebounceFn 进行防抖，300ms 延迟
 const updateDebouncedSearch = useDebounceFn((value: string) => {
   debouncedSearchText.value = value
 }, 300)
 
-// 监听原始搜索文本变化
 watch(searchText, (value) => {
   updateDebouncedSearch(value)
 })
 
-const groups = computed(() => {
-  return [
-    {
-      tab: '全部节点',
-      name: 'all',
-    },
-    ...nodesStore.groups.map(group => ({
-      tab: group,
-      name: group,
-    })),
-  ]
-})
+const groups = computed(() => [
+  { tab: '全部节点', name: 'all' },
+  ...nodesStore.groups.map(g => ({ tab: g, name: g })),
+])
 
-// 计算是否应该显示分组 Tab
 const showGroupTabs = computed(() => {
-  // 如果配置为单分组时隐藏，且只有一个分组（不含"全部节点"），则隐藏
-  if (appStore.hideSingleGroupTab && nodesStore.groups.length <= 1) {
+  if (appStore.hideSingleGroupTab && nodesStore.groups.length <= 1)
     return false
-  }
   return true
 })
 
-// 验证当前选中的分组是否有效，无效则重置为 'all'
 watch(
   () => nodesStore.groups,
-  (groups) => {
-    const currentGroup = appStore.nodeSelectedGroup
-    if (currentGroup !== 'all' && !groups.includes(currentGroup)) {
+  (gs) => {
+    const cur = appStore.nodeSelectedGroup
+    if (cur !== 'all' && !gs.includes(cur)) {
       appStore.nodeSelectedGroup = 'all'
     }
   },
   { immediate: true },
 )
 
-/**
- * 检查节点是否匹配搜索词
- */
 function isNodeMatchSearch(node: typeof nodesStore.nodes[number], search: string): boolean {
   if (!search.trim())
     return true
-
   const lowerSearch = search.toLowerCase().trim()
-
-  // 搜索节点名称
   if (node.name.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索地区（使用 regionHelper 支持国家名称搜索）
   if (node.region && isRegionMatch(node.region, search))
     return true
-
-  // 搜索操作系统
   if (node.os && node.os.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索分组
   if (node.group && node.group.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索标签
   if (node.tags && node.tags.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索备注
   if (node.remark && node.remark.toLowerCase().includes(lowerSearch))
     return true
-
   return false
 }
 
 const nodeList = computed(() => {
-  // 先按分组筛选
-  let filteredNodes = appStore.nodeSelectedGroup === 'all'
+  let filtered = appStore.nodeSelectedGroup === 'all'
     ? nodesStore.nodes
-    : nodesStore.nodes.filter(node => node.group === appStore.nodeSelectedGroup)
-
-  // 再按防抖后的搜索词筛选
+    : nodesStore.nodes.filter(n => n.group === appStore.nodeSelectedGroup)
   if (debouncedSearchText.value.trim()) {
-    filteredNodes = filteredNodes.filter(node => isNodeMatchSearch(node, debouncedSearchText.value))
+    filtered = filtered.filter(n => isNodeMatchSearch(n, debouncedSearchText.value))
   }
-
-  return filteredNodes
+  return filtered
 })
 
 function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   router.push({ name: 'instance-detail', params: { id: node.uuid } })
 }
 
-// 是否启用背景模糊
-const hasBackgroundBlur = computed(() => {
-  return appStore.backgroundEnabled && appStore.cardBlurRadius > 0
-})
+const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 
-// 计算模糊半径类
-const blurClass = computed(() => {
-  if (!hasBackgroundBlur.value)
-    return ''
-  const radius = appStore.cardBlurRadius
-  if (radius <= 8)
-    return 'glass-8'
-  if (radius <= 12)
-    return 'glass-12'
-  if (radius <= 16)
-    return 'glass-16'
-  if (radius <= 20)
-    return 'glass-20'
-  return `glass-${radius}`
-})
+const alertVariantMap: Record<string, 'default' | 'destructive'> = {
+  default: 'default',
+  info: 'default',
+  success: 'default',
+  warning: 'default',
+  error: 'destructive',
+}
+
+const alertVariant = computed(() => alertVariantMap[appStore.alertType] || 'default')
 </script>
 
 <template>
   <div class="home-view">
-    <div v-if="appStore.connectionError" class="alert px-4">
-      <NAlert type="error" title="RPC 服务错误" show-icon>
-        连接服务器失败，请检查网络设置或刷新页面后再试。
-      </NAlert>
+    <div v-if="appStore.connectionError" class="alert px-4 pb-2">
+      <Alert variant="destructive">
+        <AlertTitle>RPC 服务错误</AlertTitle>
+        <AlertDescription>连接服务器失败，请检查网络设置或刷新页面后再试。</AlertDescription>
+      </Alert>
     </div>
-    <!-- 自定义公告 -->
-    <div v-if="appStore.alertEnabled && appStore.alertContent" class="alert px-4">
-      <NAlert :type="appStore.alertType" :title="appStore.alertTitle || undefined" show-icon>
-        <MarkdownRenderer :content="appStore.alertContent" />
-      </NAlert>
+
+    <div v-if="appStore.alertEnabled && appStore.alertContent" class="alert px-4 pb-2">
+      <Alert :variant="alertVariant">
+        <AlertTitle v-if="appStore.alertTitle">
+          {{ appStore.alertTitle }}
+        </AlertTitle>
+        <AlertDescription>
+          <MarkdownRenderer :content="appStore.alertContent" />
+        </AlertDescription>
+      </Alert>
     </div>
+
     <NodeGeneralCards />
-    <NDivider class="my-0! px-4!" dashed />
+    <Separator class="my-0" />
+
     <div class="node-info p-4 flex flex-col gap-4">
-      <div class="search flex gap-2 items-center">
-        <NInput
-          v-model:value="searchText"
-          placeholder="搜索节点名称、地区、系统"
-          :class="[{ 'glass-input-enabled': hasBackgroundBlur }, blurClass]"
-        >
-          <template #prefix>
-            <div class="i-icon-park-outline-search" />
-          </template>
-        </NInput>
-        <NRadioGroup v-model:value="appStore.nodeViewMode" class="view-selector">
-          <NRadioButton value="card" class="view-selector-item">
-            <div class="i-icon-park-outline-view-grid-card" />
-          </NRadioButton>
-          <NRadioButton value="list" class="view-selector-item">
-            <div class="i-icon-park-outline-view-list" />
-          </NRadioButton>
-        </NRadioGroup>
-      </div>
       <div class="nodes">
-        <NTabs v-if="showGroupTabs" v-model:value="appStore.nodeSelectedGroup" animated>
-          <NTabPane v-for="group in groups" :key="group.name" :tab="group.tab" :name="group.name">
-            <!-- Card 视图 -->
+        <Tabs v-if="showGroupTabs" v-model="appStore.nodeSelectedGroup" class="w-full flex-col">
+          <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <TabsList>
+              <TabsTrigger v-for="g in groups" :key="g.name" :value="g.name">
+                {{ g.tab }}
+              </TabsTrigger>
+            </TabsList>
+            <div class="search flex gap-2 items-center">
+              <div class="relative">
+                <Input
+                  v-model="searchText"
+                  placeholder="搜索节点名称、地区、系统"
+                  class="w-40 md:w-60 pl-8" :class="[hasBackgroundBlur && 'glass-input-enabled glass-card']"
+                />
+                <Icon
+                  icon="icon-park-outline:search"
+                  :width="14"
+                  :height="14"
+                  class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+              <ToggleGroup v-model="appStore.nodeViewMode" type="single" variant="outline" size="sm">
+                <ToggleGroupItem value="card" aria-label="卡片视图" class="size-8 p-0">
+                  <Icon icon="icon-park-outline:view-grid-card" :width="14" :height="14" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="列表视图" class="size-8 p-0">
+                  <Icon icon="icon-park-outline:view-list" :width="14" :height="14" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+          </div>
+          <TabsContent v-for="g in groups" :key="g.name" :value="g.name">
             <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="gap-4 grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
               <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
             </div>
-            <!-- List 视图 -->
             <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
-            <!-- 空状态 -->
-            <div v-else class="text-gray-500 text-center">
-              <NEmpty description="暂无节点" />
+            <div v-else class="text-muted-foreground text-center py-8">
+              <Empty description="暂无节点" />
             </div>
-          </NTabPane>
-        </NTabs>
-        <!-- 无分组时直接显示节点列表 -->
+          </TabsContent>
+        </Tabs>
+
         <template v-else>
-          <!-- Card 视图 -->
+          <div class="flex justify-end gap-2 mb-4">
+            <div class="relative">
+              <Input
+                v-model="searchText"
+                placeholder="搜索节点名称、地区、系统"
+                class="w-40 md:w-60 pl-8" :class="[hasBackgroundBlur && 'glass-input-enabled glass-card']"
+              />
+              <Icon
+                icon="icon-park-outline:search"
+                :width="14"
+                :height="14"
+                class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+            </div>
+            <ToggleGroup v-model="appStore.nodeViewMode" type="single" variant="outline" size="sm">
+              <ToggleGroupItem value="card" aria-label="卡片视图" class="size-8 p-0">
+                <Icon icon="icon-park-outline:view-grid-card" :width="14" :height="14" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="列表视图" class="size-8 p-0">
+                <Icon icon="icon-park-outline:view-list" :width="14" :height="14" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
           <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="gap-4 grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
             <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
           </div>
-          <!-- List 视图 -->
           <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
-          <!-- 空状态 -->
-          <div v-else class="text-gray-500 text-center">
-            <NEmpty description="暂无节点" />
+          <div v-else class="text-muted-foreground text-center py-8">
+            <Empty description="暂无节点" />
           </div>
         </template>
       </div>
@@ -230,20 +219,9 @@ const blurClass = computed(() => {
   </div>
 </template>
 
-<style scoped lang="scss">
-.view-selector :deep(.n-radio__label) {
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 毛玻璃搜索框样式 */
+<style scoped>
 .glass-input-enabled {
   background-color: rgba(255, 255, 255, 0.7) !important;
-  border-radius: var(--n-border-radius);
 }
 
 html.dark .glass-input-enabled {

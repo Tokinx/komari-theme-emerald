@@ -3,9 +3,12 @@ import type { RecordFormat } from '@/utils/recordHelper'
 import type { StatusRecord } from '@/utils/rpc'
 import { useIntervalFn } from '@vueuse/core'
 import dayjs from 'dayjs'
-import { NButton, NCard, NEmpty, NSpin } from 'naive-ui'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
+import { Button } from '@/components/ui/button'
+import { CardX } from '@/components/ui/card-x'
+import { Empty } from '@/components/ui/empty'
+import { Spinner } from '@/components/ui/spinner'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { formatBytes, formatBytesSplit } from '@/utils/helper'
@@ -859,147 +862,147 @@ onMounted(() => {
   <div class="flex flex-col gap-4">
     <!-- 时间选择器 -->
     <div class="flex flex-wrap gap-2 justify-center">
-      <NButton
+      <Button
         v-for="view in availableViews"
         :key="view.label"
-        :type="selectedView === view.label ? 'primary' : 'default'"
-        size="small"
+        :variant="selectedView === view.label ? 'default' : 'outline'"
+        size="sm"
         @click="selectedView = view.label"
       >
         {{ view.label }}
-      </NButton>
+      </Button>
     </div>
 
     <!-- 内容区域 -->
-    <NSpin :show="loading">
+    <Spinner :show="loading">
       <div v-if="error" class="text-red-500 py-8 text-center">
         {{ error }}
       </div>
       <div v-else-if="remoteData.length === 0 && !loading" class="py-8">
-        <NEmpty description="暂无负载数据" />
+        <Empty description="暂无负载数据" />
       </div>
 
       <!-- 图表网格 -->
       <div v-else class="gap-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         <!-- CPU 卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">CPU</span>
               <div v-if="latestStatus?.cpu != null" class="text-sm flex gap-0.5 items-baseline">
-                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ latestStatus.cpu.toFixed(1) }}</span>
-                <span style="color: var(--n-text-color-3)">%</span>
+                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ latestStatus.cpu.toFixed(1) }}</span>
+                <span style="color: hsl(var(--muted-foreground))">%</span>
               </div>
-              <span v-else style="color: var(--n-text-color-3)">-</span>
+              <span v-else style="color: hsl(var(--muted-foreground))">-</span>
             </div>
           </template>
           <div class="h-48">
             <VChart :option="cpuChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
 
         <!-- 内存卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">内存</span>
               <div class="text-sm flex gap-1 items-baseline">
                 <template v-if="latestStatus?.ram != null">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ formatBytesSplit(latestStatus.ram, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(latestStatus.ram, appStore.byteDecimals).unit }}</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ formatBytesSplit(latestStatus.ram, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(latestStatus.ram, appStore.byteDecimals).unit }}</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
-                <span style="color: var(--n-text-color-3)">/</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
+                <span style="color: hsl(var(--muted-foreground))">/</span>
                 <template v-if="nodeInfo?.mem_total">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-3)' }">{{ formatBytesSplit(nodeInfo.mem_total, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(nodeInfo.mem_total, appStore.byteDecimals).unit }}</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--muted-foreground))' }">{{ formatBytesSplit(nodeInfo.mem_total, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(nodeInfo.mem_total, appStore.byteDecimals).unit }}</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
               </div>
             </div>
           </template>
           <div class="h-48">
             <VChart :option="memoryChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
 
         <!-- 磁盘卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">磁盘</span>
               <div class="text-sm flex gap-1 items-baseline">
                 <template v-if="latestStatus?.disk != null">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ formatBytesSplit(latestStatus.disk, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(latestStatus.disk, appStore.byteDecimals).unit }}</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ formatBytesSplit(latestStatus.disk, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(latestStatus.disk, appStore.byteDecimals).unit }}</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
-                <span style="color: var(--n-text-color-3)">/</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
+                <span style="color: hsl(var(--muted-foreground))">/</span>
                 <template v-if="nodeInfo?.disk_total">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-3)' }">{{ formatBytesSplit(nodeInfo.disk_total, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(nodeInfo.disk_total, appStore.byteDecimals).unit }}</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--muted-foreground))' }">{{ formatBytesSplit(nodeInfo.disk_total, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(nodeInfo.disk_total, appStore.byteDecimals).unit }}</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
               </div>
             </div>
           </template>
           <div class="h-48">
             <VChart :option="diskChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
 
         <!-- 网络卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">网络</span>
               <div class="text-sm flex gap-1 items-baseline">
-                <span style="color: var(--n-text-color-3)">↑</span>
+                <span style="color: hsl(var(--muted-foreground))">↑</span>
                 <template v-if="latestStatus?.net_out != null">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ formatBytesSplit(latestStatus.net_out, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(latestStatus.net_out, appStore.byteDecimals).unit }}/s</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ formatBytesSplit(latestStatus.net_out, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(latestStatus.net_out, appStore.byteDecimals).unit }}/s</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
-                <span style="color: var(--n-text-color-3)">｜</span>
-                <span style="color: var(--n-text-color-3)">↓</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
+                <span style="color: hsl(var(--muted-foreground))">｜</span>
+                <span style="color: hsl(var(--muted-foreground))">↓</span>
                 <template v-if="latestStatus?.net_in != null">
-                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ formatBytesSplit(latestStatus.net_in, appStore.byteDecimals).value }}</span>
-                  <span style="color: var(--n-text-color-3)">{{ formatBytesSplit(latestStatus.net_in, appStore.byteDecimals).unit }}/s</span>
+                  <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ formatBytesSplit(latestStatus.net_in, appStore.byteDecimals).value }}</span>
+                  <span style="color: hsl(var(--muted-foreground))">{{ formatBytesSplit(latestStatus.net_in, appStore.byteDecimals).unit }}/s</span>
                 </template>
-                <span v-else style="color: var(--n-text-color-3)">-</span>
+                <span v-else style="color: hsl(var(--muted-foreground))">-</span>
               </div>
             </div>
           </template>
           <div class="h-48">
             <VChart :option="networkChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
 
         <!-- 连接数卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">连接</span>
               <div class="text-sm flex gap-1 items-baseline">
-                <span style="color: var(--n-text-color-3)">TCP:</span>
-                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ latestStatus?.connections ?? '-' }}</span>
-                <span style="color: var(--n-text-color-3)">｜</span>
-                <span style="color: var(--n-text-color-3)">UDP:</span>
-                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ latestStatus?.connections_udp ?? '-' }}</span>
+                <span style="color: hsl(var(--muted-foreground))">TCP:</span>
+                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ latestStatus?.connections ?? '-' }}</span>
+                <span style="color: hsl(var(--muted-foreground))">｜</span>
+                <span style="color: hsl(var(--muted-foreground))">UDP:</span>
+                <span :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ latestStatus?.connections_udp ?? '-' }}</span>
               </div>
             </div>
           </template>
           <div class="h-48">
             <VChart :option="connectionsChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
 
         <!-- 进程卡片 -->
-        <NCard size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
+        <CardX size="small" class="chart-card" :class="[{ 'glass-card-enabled': hasBackgroundBlur }, blurClass]">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">进程</span>
-              <span class="text-sm" :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">
+              <span class="text-sm" :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">
                 {{ latestStatus?.process ?? '-' }}
               </span>
             </div>
@@ -1007,34 +1010,31 @@ onMounted(() => {
           <div class="h-48">
             <VChart :option="processChartOption" autoresize />
           </div>
-        </NCard>
+        </CardX>
       </div>
-    </NSpin>
+    </Spinner>
   </div>
 </template>
 
-<style scoped lang="scss">
-.chart-card {
-  --n-padding-bottom: 8px;
-  --n-padding-left: 8px;
-  --n-padding-right: 8px;
-  --n-padding-top: 8px;
+<style scoped>
+.chart-card :deep([data-slot='card-content']),
+.chart-card > div:last-child {
+  padding: 8px;
 }
 
-/* 毛玻璃卡片样式 */
 .glass-card-enabled {
   background-color: rgba(255, 255, 255, 0.7) !important;
+}
 
-  &:hover {
-    filter: brightness(0.95);
-  }
+.glass-card-enabled:hover {
+  filter: brightness(0.95);
 }
 
 html.dark .glass-card-enabled {
   background-color: rgba(24, 24, 28, 0.85) !important;
+}
 
-  &:hover {
-    filter: brightness(1.1);
-  }
+html.dark .glass-card-enabled:hover {
+  filter: brightness(1.1);
 }
 </style>

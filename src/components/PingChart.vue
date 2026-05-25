@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
-import { NButton, NEmpty, NSpin, NSwitch, NTooltip } from 'naive-ui'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
+import { Button } from '@/components/ui/button'
+import { Empty } from '@/components/ui/empty'
+import { Spinner } from '@/components/ui/spinner'
+import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/stores/app'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
 import { getSharedRpc } from '@/utils/rpc'
@@ -533,151 +538,161 @@ const blurClass = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <!-- 时间选择器 -->
-    <div class="flex flex-wrap gap-2 justify-center">
-      <NButton
-        v-for="view in availableViews"
-        :key="view.label"
-        :type="selectedView === view.label ? 'primary' : 'default'"
-        size="small"
-        @click="selectedView = view.label"
-      >
-        {{ view.label }}
-      </NButton>
-    </div>
-
-    <!-- 内容区域 -->
-    <NSpin :show="loading" content-class="flex flex-col gap-4">
-      <div v-if="error" class="text-red-500 py-8 text-center">
-        {{ error }}
-      </div>
-      <div v-else-if="tasks.length === 0 && !loading" class="py-8">
-        <NEmpty description="暂无延迟数据" />
+  <TooltipProvider :delay-duration="200">
+    <div class="flex flex-col gap-4">
+      <!-- 时间选择器 -->
+      <div class="flex flex-wrap gap-2 justify-center">
+        <Button
+          v-for="view in availableViews"
+          :key="view.label"
+          :variant="selectedView === view.label ? 'default' : 'outline'"
+          size="sm"
+          @click="selectedView = view.label"
+        >
+          {{ view.label }}
+        </Button>
       </div>
 
-      <template v-else>
-        <!-- 最新值统计卡片（可点击切换选中状态） -->
-        <div v-if="latestValues.length > 0" class="gap-3 grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))">
-          <div
-            v-for="task in latestValues"
-            :key="task.id"
-            class="p-3 border border-transparent flex gap-3 cursor-pointer select-none transition-colors items-center hover:border-solid"
-            :class="[
-              selectedTaskIds.includes(task.id)
-                ? ''
-                : 'opacity-50',
-              hasBackgroundBlur ? 'glass-task-enabled' : 'task-card-default',
-              blurClass,
-            ]"
-            :onmouseover="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = task.color)"
-            :onmouseout="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = 'transparent')"
-            @click="toggleTask(task.id)"
-          >
+      <!-- 内容区域 -->
+      <Spinner :show="loading" content-class="flex flex-col gap-4">
+        <div v-if="error" class="text-red-500 py-8 text-center">
+          {{ error }}
+        </div>
+        <div v-else-if="tasks.length === 0 && !loading" class="py-8">
+          <Empty description="暂无延迟数据" />
+        </div>
+
+        <template v-else>
+          <!-- 最新值统计卡片（可点击切换选中状态） -->
+          <div v-if="latestValues.length > 0" class="gap-3 grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))">
             <div
-              class="rounded-md flex-shrink-0 h-10 w-1.5"
-              :style="{ backgroundColor: task.color }"
-            />
-            <div class="flex-1 min-w-0">
-              <div class="flex gap-2 items-center">
-                <span class="text-base font-semibold truncate">{{ task.name }}</span>
-                <NTooltip placement="top">
-                  <template #trigger>
-                    <span class="i-carbon-information text-sm opacity-50 cursor-help transition-opacity hover:opacity-100" style="color: var(--n-text-color-2)" @click.stop />
-                  </template>
-                  <div class="text-sm gap-x-4 gap-y-1.5 grid grid-cols-2">
-                    <template v-if="task.min !== undefined">
-                      <span style="color: var(--n-text-color-3)">最小</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.min) }} ms</span>
-                    </template>
-                    <template v-if="task.max !== undefined">
-                      <span style="color: var(--n-text-color-3)">最大</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.max) }} ms</span>
-                    </template>
-                    <template v-if="task.avg !== undefined">
-                      <span style="color: var(--n-text-color-3)">平均</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.avg) }} ms</span>
-                    </template>
-                    <template v-if="task.latest !== undefined">
-                      <span style="color: var(--n-text-color-3)">最新</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.latest) }} ms</span>
-                    </template>
-                    <template v-if="task.p50 !== undefined">
-                      <span style="color: var(--n-text-color-3)">P50</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p50) }} ms</span>
-                    </template>
-                    <template v-if="task.p99 !== undefined">
-                      <span style="color: var(--n-text-color-3)">P99</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p99) }} ms</span>
-                    </template>
-                    <template v-if="task.p99_p50_ratio !== undefined">
-                      <span style="color: var(--n-text-color-3)">波动率</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.p99_p50_ratio.toFixed(2) }}</span>
-                    </template>
-                    <template v-if="task.interval !== undefined">
-                      <span style="color: var(--n-text-color-3)">间隔</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.interval }}s</span>
-                    </template>
-                    <template v-if="task.type">
-                      <span style="color: var(--n-text-color-3)">类型</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.type.toUpperCase() }}</span>
-                    </template>
-                    <template v-if="task.total !== undefined">
-                      <span style="color: var(--n-text-color-3)">总数</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.total }}</span>
-                    </template>
-                  </div>
-                </NTooltip>
-              </div>
-              <div class="text-sm mt-1 flex gap-3 items-center" style="color: var(--n-text-color-3)">
-                <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ task.latestValue !== null ? `${Math.round(task.latestValue)} ms` : '-' }}</span>
-                <span class="opacity-60">•</span>
-                <span :style="{ fontFamily: appStore.numberFontFamily }">{{ task.loss.toFixed(1) }}% 丢包</span>
-                <template v-if="task.p99_p50_ratio !== undefined">
+              v-for="task in latestValues"
+              :key="task.id"
+              class="p-3 border border-transparent flex gap-3 cursor-pointer select-none transition-colors items-center hover:border-solid"
+              :class="[
+                selectedTaskIds.includes(task.id)
+                  ? ''
+                  : 'opacity-50',
+                hasBackgroundBlur ? 'glass-task-enabled' : 'task-card-default',
+                blurClass,
+              ]"
+              :onmouseover="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = task.color)"
+              :onmouseout="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = 'transparent')"
+              @click="toggleTask(task.id)"
+            >
+              <div
+                class="rounded-md flex-shrink-0 h-10 w-1.5"
+                :style="{ backgroundColor: task.color }"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex gap-2 items-center">
+                  <span class="text-base font-semibold truncate">{{ task.name }}</span>
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <span class="text-sm opacity-50 cursor-help transition-opacity hover:opacity-100 inline-flex" style="color: color-mix(in srgb, hsl(var(--foreground)) 80%, transparent)" @click.stop>
+                        <Icon icon="carbon:information" :width="14" :height="14" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div class="text-sm gap-x-4 gap-y-1.5 grid grid-cols-2">
+                        <template v-if="task.min !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">最小</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.min) }} ms</span>
+                        </template>
+                        <template v-if="task.max !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">最大</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.max) }} ms</span>
+                        </template>
+                        <template v-if="task.avg !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">平均</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.avg) }} ms</span>
+                        </template>
+                        <template v-if="task.latest !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">最新</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.latest) }} ms</span>
+                        </template>
+                        <template v-if="task.p50 !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">P50</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p50) }} ms</span>
+                        </template>
+                        <template v-if="task.p99 !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">P99</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p99) }} ms</span>
+                        </template>
+                        <template v-if="task.p99_p50_ratio !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">波动率</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.p99_p50_ratio.toFixed(2) }}</span>
+                        </template>
+                        <template v-if="task.interval !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">间隔</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.interval }}s</span>
+                        </template>
+                        <template v-if="task.type">
+                          <span style="color: hsl(var(--muted-foreground))">类型</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.type.toUpperCase() }}</span>
+                        </template>
+                        <template v-if="task.total !== undefined">
+                          <span style="color: hsl(var(--muted-foreground))">总数</span>
+                          <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.total }}</span>
+                        </template>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div class="text-sm mt-1 flex gap-3 items-center" style="color: hsl(var(--muted-foreground))">
+                  <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily, color: 'hsl(var(--foreground))' }">{{ task.latestValue !== null ? `${Math.round(task.latestValue)} ms` : '-' }}</span>
                   <span class="opacity-60">•</span>
-                  <span :style="{ fontFamily: appStore.numberFontFamily }" title="波动率 p99/p50">{{ task.p99_p50_ratio.toFixed(1) }} 波动</span>
-                </template>
+                  <span :style="{ fontFamily: appStore.numberFontFamily }">{{ task.loss.toFixed(1) }}% 丢包</span>
+                  <template v-if="task.p99_p50_ratio !== undefined">
+                    <span class="opacity-60">•</span>
+                    <span :style="{ fontFamily: appStore.numberFontFamily }" title="波动率 p99/p50">{{ task.p99_p50_ratio.toFixed(1) }} 波动</span>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 峰值裁剪开关 + 全选/全不选 -->
-        <div class="flex flex-wrap gap-4 items-center">
-          <div class="flex gap-2 items-center">
-            <NSwitch v-model:value="cutPeak" size="small" />
-            <span class="text-sm">裁剪峰值</span>
-            <NTooltip>
-              <template #trigger>
-                <span class="i-carbon-information text-sm opacity-50 cursor-help transition-opacity hover:opacity-100" style="color: var(--n-text-color-3)" />
-              </template>
-              <span>使用 EWMA 算法平滑数据并过滤突变值</span>
-            </NTooltip>
+          <!-- 峰值裁剪开关 + 全选/全不选 -->
+          <div class="flex flex-wrap gap-4 items-center">
+            <div class="flex gap-2 items-center">
+              <Switch v-model="cutPeak" />
+              <span class="text-sm">裁剪峰值</span>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <span class="text-sm opacity-50 cursor-help transition-opacity hover:opacity-100 inline-flex" style="color: hsl(var(--muted-foreground))">
+                    <Icon icon="carbon:information" :width="14" :height="14" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>使用 EWMA 算法平滑数据并过滤突变值</span>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div class="flex gap-2 items-center">
+              <Button variant="ghost" size="sm" @click="showAllTasks">
+                全选
+              </Button>
+              <Button variant="ghost" size="sm" @click="hideAllTasks">
+                全不选
+              </Button>
+            </div>
           </div>
-          <div class="flex gap-2 items-center">
-            <NButton size="small" tertiary @click="showAllTasks">
-              全选
-            </NButton>
-            <NButton size="small" tertiary @click="hideAllTasks">
-              全不选
-            </NButton>
-          </div>
-        </div>
 
-        <!-- 图表 -->
-        <div class="h-80">
-          <VChart :option="pingChartOption" autoresize />
-        </div>
-      </template>
-    </NSpin>
-  </div>
+          <!-- 图表 -->
+          <div class="h-80">
+            <VChart :option="pingChartOption" autoresize />
+          </div>
+        </template>
+      </Spinner>
+    </div>
+  </TooltipProvider>
 </template>
 
 <style scoped>
 /* 默认任务卡片样式 */
 .task-card-default {
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: var(--n-border-radius);
+  border-radius: var(--radius);
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
@@ -689,7 +704,7 @@ html.dark .task-card-default {
 /* 毛玻璃任务卡片样式 */
 .glass-task-enabled {
   background-color: rgba(255, 255, 255, 0.7);
-  border-radius: var(--n-border-radius);
+  border-radius: var(--radius);
 }
 
 html.dark .glass-task-enabled {

@@ -16,12 +16,4 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(() => {
-  window.$loadingBar.start()
-})
-
-router.afterEach(() => {
-  window.$loadingBar.finish()
-})
-
 export default router
