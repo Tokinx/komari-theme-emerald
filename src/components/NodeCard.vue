@@ -185,7 +185,7 @@ const customTags = computed(() => parseTags(props.node.tags).map(t => t.text))
             <div class="text-sm font-medium text-destructive">
               离线
             </div>
-            <div class="text-xs text-muted-foreground font-number">
+            <div class="text-xs text-muted-foreground">
               {{ offlineTime }}
             </div>
           </div>

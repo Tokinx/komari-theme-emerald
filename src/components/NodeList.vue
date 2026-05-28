@@ -379,7 +379,7 @@ function getCustomTags(node: NodeData): Array<string> {
               <div class="text-sm font-semibold truncate">
                 <span class="text-red-500">离线</span> {{ node.name }}
               </div>
-              <div class="text-xs text-muted-foreground font-number">
+              <div class="text-xs text-muted-foreground">
                 {{ formatOfflineTime(node) }}
               </div>
             </div>

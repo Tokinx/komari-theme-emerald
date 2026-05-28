@@ -569,43 +569,43 @@ onMounted(() => {
                       <div class="text-xs gap-x-4 gap-y-1.5 grid grid-cols-4">
                         <template v-if="task.min !== undefined">
                           <span class="text-muted-foreground">最小</span>
-                          <span class="font-medium font-number">{{ Math.round(task.min) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.min) }} ms</span>
                         </template>
                         <template v-if="task.max !== undefined">
                           <span class="text-muted-foreground">最大</span>
-                          <span class="font-medium font-number">{{ Math.round(task.max) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.max) }} ms</span>
                         </template>
                         <template v-if="task.avg !== undefined">
                           <span class="text-muted-foreground">平均</span>
-                          <span class="font-medium font-number">{{ Math.round(task.avg) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.avg) }} ms</span>
                         </template>
                         <template v-if="task.latest !== undefined">
                           <span class="text-muted-foreground">最新</span>
-                          <span class="font-medium font-number">{{ Math.round(task.latest) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.latest) }} ms</span>
                         </template>
                         <template v-if="task.p50 !== undefined">
                           <span class="text-muted-foreground">P50</span>
-                          <span class="font-medium font-number">{{ Math.round(task.p50) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.p50) }} ms</span>
                         </template>
                         <template v-if="task.p99 !== undefined">
                           <span class="text-muted-foreground">P99</span>
-                          <span class="font-medium font-number">{{ Math.round(task.p99) }} ms</span>
+                          <span class="font-medium">{{ Math.round(task.p99) }} ms</span>
                         </template>
                         <template v-if="task.p99_p50_ratio !== undefined">
                           <span class="text-muted-foreground">波动率</span>
-                          <span class="font-medium font-number">{{ task.p99_p50_ratio.toFixed(2) }}</span>
+                          <span class="font-medium">{{ task.p99_p50_ratio.toFixed(2) }}</span>
                         </template>
                         <template v-if="task.interval !== undefined">
                           <span class="text-muted-foreground">间隔</span>
-                          <span class="font-medium font-number">{{ task.interval }}s</span>
+                          <span class="font-medium">{{ task.interval }}s</span>
                         </template>
                         <template v-if="task.type">
                           <span class="text-muted-foreground">类型</span>
-                          <span class="font-medium font-number">{{ task.type.toUpperCase() }}</span>
+                          <span class="font-medium">{{ task.type.toUpperCase() }}</span>
                         </template>
                         <template v-if="task.total !== undefined">
                           <span class="text-muted-foreground">总数</span>
-                          <span class="font-medium font-number">{{ task.total }}</span>
+                          <span class="font-medium">{{ task.total }}</span>
                         </template>
                       </div>
                     </TooltipContent>
@@ -613,14 +613,14 @@ onMounted(() => {
                 </div>
               </TooltipProvider>
               <div class="text-xs mt-1 flex gap-1.5 items-center text-muted-foreground">
-                <span class="font-medium font-number" title="平均延迟">
+                <span class="font-medium" title="平均延迟">
                   {{ task.avg !== undefined ? `${Math.round(task.avg)}ms` : '-' }}
                 </span>
                 <span class="opacity-60">·</span>
-                <span class="font-number" title="丢包率">{{ task.loss.toFixed(2) }}%</span>
+                <span title="丢包率">{{ task.loss.toFixed(2) }}%</span>
                 <template v-if="task.p99_p50_ratio !== undefined">
                   <span class="opacity-60">·</span>
-                  <span class="font-number" title="波动率">{{ task.p99_p50_ratio.toFixed(2) }}</span>
+                  <span title="波动率">{{ task.p99_p50_ratio.toFixed(2) }}</span>
                 </template>
               </div>
             </div>

@@ -3,6 +3,8 @@
 基于 Vue 3 + Vite + reka-ui + Tailwind CSS v4 构建的 Komari Monitor 主题
 </p>
 
+![preview](/docs/preview.png)
+
 ## 使用
 
 1. 从 [Release 页面](https://github.com/Tokinx/komari-theme-emerald/releases) 下载最新的 `komari-theme-emerald-build-*.zip` 文件
