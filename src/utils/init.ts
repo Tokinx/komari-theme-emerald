@@ -4,6 +4,7 @@
  */
 
 import type { Client, KomariRpc, NodeStatus } from '@/utils/rpc'
+import { ingestLatestPing } from '@/composables/useNodePingStats'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getSharedApi } from '@/utils/api'
@@ -165,6 +166,9 @@ class InitManager {
 
       // 初始化节点数据
       this.nodesStore.initNodes(clientsResult, statusesResult)
+
+      // 将最新 ping 快照增量合并进 1 小时共享记录（首屏 getRecords 未加载时为 no-op）
+      ingestLatestPing(statusesResult)
     }
     catch (error) {
       console.error('[InitManager] Failed to fetch nodes data:', error)
@@ -340,6 +344,9 @@ class InitManager {
 
       // 更新节点状态
       this.nodesStore.updateNodeStatuses(statusesResult)
+
+      // 将最新 ping 快照增量合并进 1 小时共享记录，保持柱状图实时滚动
+      ingestLatestPing(statusesResult)
 
       // 连接恢复正常，重置错误状态
       this.appStore.connectionError = false

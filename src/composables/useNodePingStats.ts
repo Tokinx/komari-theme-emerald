@@ -1,4 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { NodeStatus } from '@/utils/rpc'
+import { useThrottleFn } from '@vueuse/core'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { getSharedRpc } from '@/utils/rpc'
 
@@ -36,12 +38,20 @@ interface SharedPingRecordsEntry {
   loading: ReturnType<typeof ref<boolean>>
   error: ReturnType<typeof ref<string | null>>
   promise: Promise<void> | null
+  /** 增量补点去重状态：key=`${client}:${task_id}` → 上次补点的延迟值与时间戳 */
+  lastAppended: Map<string, { value: number, time: number }>
 }
 
 const HISTORY_BUCKET_COUNT = 20
-const CACHE_VERSION = 3
+const CACHE_VERSION = 4
 const CACHE_KEY_PREFIX = 'komari-theme-emerald:node-ping-stats'
 const FULL_LOSS_EPSILON = 1e-6
+/** 接入实时增量更新的窗口（小时）；仅首页节点卡片使用的 1 小时记录 */
+const REALTIME_HOURS = 1
+/** 同一任务延迟值未变化时的最小补点间隔，避免每轮轮询堆叠重复点 */
+const MIN_APPEND_GAP_MS = 30_000
+/** 滚动窗口长度（1 小时） */
+const WINDOW_MS = 60 * 60 * 1000
 const sharedPingRecordsCache = new Map<number, SharedPingRecordsEntry>()
 
 interface TaskRecordSummary {
@@ -168,6 +178,7 @@ function createSharedPingRecordsEntry(): SharedPingRecordsEntry {
     loading: ref(false),
     error: ref<string | null>(null),
     promise: null,
+    lastAppended: new Map(),
   }
 }
 
@@ -232,6 +243,73 @@ async function loadSharedPingRecords(entry: SharedPingRecordsEntry, hours: numbe
   })()
 
   return entry.promise
+}
+
+/**
+ * 将 getNodesLatestStatus 返回的最新 ping 快照增量合并进 1 小时共享记录。
+ * 由 init.ts 的轮询每 N 秒调用一次，使首页节点卡片的 ping 柱状图持续滚动刷新，
+ * 且不再产生额外的 getRecords 请求。
+ */
+export function ingestLatestPing(statuses: Record<string, NodeStatus>): void {
+  const entry = sharedPingRecordsCache.get(REALTIME_HOURS)
+  // 首屏 getRecords 尚未加载完成时直接跳过，避免凭空建空 entry 顶掉首次加载
+  if (!entry || !entry.data.value)
+    return
+
+  const recordsByClient = entry.data.value.recordsByClient
+  let mutated = false
+  let anchorMs = 0
+
+  for (const [uuid, status] of Object.entries(statuses)) {
+    if (!status?.ping)
+      continue
+
+    const statusMs = new Date(status.time).getTime()
+    if (!Number.isFinite(statusMs))
+      continue
+    anchorMs = Math.max(anchorMs, statusMs)
+
+    for (const [taskKey, summary] of Object.entries(status.ping)) {
+      const taskId = Number(taskKey)
+      if (!Number.isFinite(taskId))
+        continue
+
+      const value = typeof summary.latest === 'number' && summary.latest >= 0
+        ? summary.latest
+        : -1
+      const dedupeKey = `${uuid}:${taskId}`
+      const previous = entry.lastAppended.get(dedupeKey)
+
+      // 去重：延迟值变化（含丢包跳变）或距上次补点已达最小间隔才追加
+      const valueChanged = !previous || previous.value !== value
+      const gapEnough = !previous || statusMs - previous.time >= MIN_APPEND_GAP_MS
+      if (!valueChanged && !gapEnough)
+        continue
+      // 同一状态快照时间不重复追加
+      if (previous && previous.time === statusMs)
+        continue
+
+      const clientRecords = recordsByClient.get(uuid) ?? []
+      clientRecords.push({ client: uuid, task_id: taskId, time: status.time, value })
+      recordsByClient.set(uuid, clientRecords)
+      entry.lastAppended.set(dedupeKey, { value, time: statusMs })
+      mutated = true
+    }
+  }
+
+  if (!mutated)
+    return
+
+  // 以服务端最新状态时间为锚点裁剪到 1 小时窗口（不依赖浏览器本地时钟）
+  const cutoff = (anchorMs || Date.now()) - WINDOW_MS
+  for (const [uuid, clientRecords] of recordsByClient) {
+    const pruned = clientRecords.filter(record => new Date(record.time).getTime() >= cutoff)
+    if (pruned.length !== clientRecords.length)
+      recordsByClient.set(uuid, pruned)
+  }
+
+  // 重新赋值 shallowRef 的包装对象，触发依赖 entry.data 的 computed 重算
+  entry.data.value = { recordsByClient }
 }
 
 function buildPingHistory(records: PingRecord[]): NodePingHistoryPoint[] {
@@ -361,71 +439,88 @@ export function useNodePingStats(
     enabled?: MaybeRefOrGetter<boolean>
   },
 ) {
-  const stats = ref<NodePingStatsState>(createEmptyStats())
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  const resolved = computed(() => ({
+    uuid: toValue(uuid),
+    hours: Math.max(1, Math.floor(toValue(options?.hours) ?? 24)),
+    enabled: toValue(options?.enabled) ?? true,
+  }))
+
+  // stats 改为 computed：既在首次加载完成后派生，也在 ingestLatestPing 增量更新
+  // （重新赋值 entry.data）后自动重算，实现停留页面时的实时滚动刷新。
+  const stats = computed<NodePingStatsState>(() => {
+    const { uuid: nodeUuid, hours, enabled } = resolved.value
+    if (!enabled || !nodeUuid.trim())
+      return createEmptyStats()
+
+    // 通过 getSharedPingRecordsEntry 读取（不存在则创建），确保 computed 始终对
+    // entry.data 这个 shallowRef 建立响应式依赖——即便首次加载尚未返回。
+    const entry = getSharedPingRecordsEntry(hours)
+    const state = entry.data.value
+    if (!state)
+      return readStatsCache(nodeUuid, hours) ?? createEmptyStats()
+
+    const records = state.recordsByClient.get(nodeUuid) ?? []
+    return records.length ? buildStats(records) : createEmptyStats()
+  })
+
+  // 副作用：按需触发首次共享加载并维护 loading/error，不再命令式写入 stats。
   watch(
-    [
-      () => toValue(uuid),
-      () => Math.max(1, Math.floor(toValue(options?.hours) ?? 24)),
-      () => toValue(options?.enabled) ?? true,
-    ],
-    async ([nextUuid, nextHours, enabled], _previous, onCleanup) => {
+    resolved,
+    async (next, _previous, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
         cancelled = true
       })
 
-      if (!enabled || !nextUuid.trim()) {
+      const { uuid: nodeUuid, hours, enabled } = next
+      if (!enabled || !nodeUuid.trim()) {
         loading.value = false
         error.value = null
-        stats.value = createEmptyStats()
         return
       }
 
-      const cachedStats = readStatsCache(nextUuid, nextHours)
-      if (cachedStats) {
-        stats.value = cachedStats
-      }
-      else {
-        stats.value = createEmptyStats()
-      }
+      const entry = getSharedPingRecordsEntry(hours)
+      if (entry.data.value)
+        return
 
       loading.value = true
       error.value = null
 
       try {
-        const sharedEntry = getSharedPingRecordsEntry(nextHours)
-        if (!sharedEntry.data.value) {
-          await loadSharedPingRecords(sharedEntry, nextHours)
-        }
-
-        if (cancelled)
-          return
-
-        const nextRecords = sharedEntry.data.value?.recordsByClient.get(nextUuid) ?? []
-        const nextStats = buildStats(nextRecords)
-        stats.value = nextStats
-        writeStatsCache(nextUuid, nextHours, nextStats)
+        await loadSharedPingRecords(entry, hours)
       }
       catch (err) {
-        if (cancelled)
-          return
-
-        error.value = err instanceof Error ? err.message : '获取 Ping 历史失败'
-        if (!cachedStats) {
-          stats.value = createEmptyStats()
-        }
+        if (!cancelled)
+          error.value = err instanceof Error ? err.message : '获取 Ping 历史失败'
       }
       finally {
-        if (!cancelled) {
+        if (!cancelled)
           loading.value = false
-        }
       }
     },
     { immediate: true },
   )
+
+  // 实时增量更新频繁，节流回写 localStorage（leading + trailing），避免每次都写盘。
+  const persistStats = useThrottleFn(
+    (nodeUuid: string, hours: number, value: NodePingStatsState) => {
+      writeStatsCache(nodeUuid, hours, value)
+    },
+    30_000,
+    true,
+    true,
+  )
+
+  watch(stats, (value) => {
+    if (!value.hasData)
+      return
+    const { uuid: nodeUuid, hours, enabled } = resolved.value
+    if (enabled && nodeUuid.trim())
+      persistStats(nodeUuid, hours, value)
+  })
 
   return {
     stats,
