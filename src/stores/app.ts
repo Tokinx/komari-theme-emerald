@@ -224,12 +224,44 @@ const useAppStore = defineStore('app', () => {
     return 0
   })
 
-  const backgroundOverlay = computed<number>(() => {
+  const darkBackgroundOverlay = computed<number>(() => {
     const settings = publicSettings.value?.theme_settings
-    if (settings && typeof settings.backgroundOverlay === 'number' && settings.backgroundOverlay >= -100 && settings.backgroundOverlay <= 100) {
-      return settings.backgroundOverlay
+    if (settings && typeof settings.darkBackgroundOverlay === 'number' && settings.darkBackgroundOverlay >= 0 && settings.darkBackgroundOverlay <= 100) {
+      return settings.darkBackgroundOverlay
     }
     return 0
+  })
+
+  const lightBackgroundOverlay = computed<number>(() => {
+    const settings = publicSettings.value?.theme_settings
+    if (settings && typeof settings.lightBackgroundOverlay === 'number' && settings.lightBackgroundOverlay >= 0 && settings.lightBackgroundOverlay <= 100) {
+      return settings.lightBackgroundOverlay
+    }
+    return 0
+  })
+
+  // 读取【背景黑色遮罩在亮色模式下生效】开关，默认 true
+  const darkOverlayInLightMode = computed<boolean>(() => {
+    const settings = publicSettings.value?.theme_settings
+    if (settings && typeof settings.darkOverlayInLightMode === 'boolean') {
+      return settings.darkOverlayInLightMode
+    }
+    return true
+  })
+
+  // 当前模式下实际生效的遮罩强度和类型
+  // 规则：
+  //   暗色模式：始终使用黑色遮罩（darkBackgroundOverlay）
+  //   亮色模式 + darkOverlayInLightMode=true：同样使用黑色遮罩，视觉效果与暗色模式一致
+  //   亮色模式 + darkOverlayInLightMode=false：使用白色遮罩（lightBackgroundOverlay）
+  const backgroundOverlay = computed<{ value: number, type: 'dark' | 'light' }>(() => {
+    if (isDark.value) {
+      return { value: darkBackgroundOverlay.value, type: 'dark' }
+    }
+    if (darkOverlayInLightMode.value) {
+      return { value: darkBackgroundOverlay.value, type: 'dark' }
+    }
+    return { value: lightBackgroundOverlay.value, type: 'light' }
   })
 
   // 当 publicSettings 加载后，如果 localStorage 没有保存过视图模式或值为非法值，使用默认值
@@ -307,6 +339,9 @@ const useAppStore = defineStore('app', () => {
     currentBackgroundUrl,
     backgroundBlur,
     backgroundOverlay,
+    darkBackgroundOverlay,
+    lightBackgroundOverlay,
+    darkOverlayInLightMode,
     isLoggedIn,
     publicSettings,
     connectionError,
