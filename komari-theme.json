@@ -35,7 +35,8 @@
       { "key": "lightBackgroundUrl", "name": "亮色模式背景地址", "type": "string", "default": "", "help": "亮色模式下的背景图片/视频 URL" },
       { "key": "darkBackgroundUrl", "name": "暗色模式背景地址", "type": "string", "default": "", "help": "暗色模式下的背景图片/视频 URL" },
       { "key": "backgroundBlur", "name": "背景模糊半径", "type": "number", "default": 0, "help": "背景的高斯模糊半径（单位：px），0 表示不模糊" },
-      { "key": "backgroundOverlay", "name": "背景遮罩强度", "type": "number", "default": 0, "help": "背景遮罩强度（-100 到 100）：负数降低背景透明度，0 表示关闭，正数为黑色遮罩，绝对值越大效果越明显" }
+      { "key": "darkBackgroundOverlay", "name": "暗色模式背景遮罩强度", "type": "number", "default": 0, "help": "仅在暗色模式下生效，黑色遮罩强度（0 到 100）：0 表示无遮罩，100 表示完全黑色遮罩" },
+      { "key": "lightBackgroundOverlay", "name": "亮色模式背景遮罩强度", "type": "number", "default": 0, "help": "仅在亮色模式下生效，白色遮罩强度（0 到 100）：0 表示无遮罩（背景图原图呈现），100 表示完全白色遮罩（背景完全被遮挡）" }
     ]
   }
 }

@@ -16,23 +16,24 @@ const backgroundStyle = computed(() => {
 })
 
 const backgroundContainerStyle = computed(() => {
-  const overlay = appStore.backgroundOverlay
-  if (overlay >= 0)
-    return {}
-
-  return { opacity: 1 - Math.abs(overlay) / 100 }
+  return {}
 })
 
 const overlayStyle = computed(() => {
   const overlay = appStore.backgroundOverlay
-  if (overlay <= 0)
+  if (overlay.value <= 0)
     return {}
 
-  return { backgroundColor: `rgba(0, 0, 0, ${overlay / 100})` }
+  if (overlay.type === 'dark') {
+    return { backgroundColor: `rgba(0, 0, 0, ${overlay.value / 100})` }
+  }
+  else {
+    return { backgroundColor: `rgba(255, 255, 255, ${overlay.value / 100})` }
+  }
 })
 
 const showBackground = computed(() => appStore.backgroundEnabled)
-const showBackgroundOverlay = computed(() => appStore.backgroundOverlay > 0)
+const showBackgroundOverlay = computed(() => appStore.backgroundOverlay.value > 0)
 const currentUrl = computed(() => appStore.currentBackgroundUrl)
 const backgroundType = computed(() => appStore.backgroundType)
 
