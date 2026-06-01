@@ -7,6 +7,12 @@ const appStore = useAppStore()
 const isLoaded = ref(false)
 const hasError = ref(false)
 
+const showBackground = computed(() => appStore.backgroundEnabled)
+const currentUrl = computed(() => appStore.currentBackgroundUrl)
+const backgroundType = computed(() => appStore.backgroundType)
+const hasCustomBackground = computed(() => showBackground.value && !!currentUrl.value)
+const showBackgroundOverlay = computed(() => hasCustomBackground.value && appStore.backgroundOverlay > 0)
+
 const backgroundStyle = computed(() => {
   const blur = appStore.backgroundBlur
   return {
@@ -16,6 +22,9 @@ const backgroundStyle = computed(() => {
 })
 
 const backgroundContainerStyle = computed(() => {
+  if (!hasCustomBackground.value)
+    return {}
+
   const overlay = appStore.backgroundOverlay
   if (overlay >= 0)
     return {}
@@ -31,31 +40,22 @@ const overlayStyle = computed(() => {
   return { backgroundColor: `rgba(0, 0, 0, ${overlay / 100})` }
 })
 
-const showBackground = computed(() => appStore.backgroundEnabled)
-const showBackgroundOverlay = computed(() => appStore.backgroundOverlay > 0)
-const currentUrl = computed(() => appStore.currentBackgroundUrl)
-const backgroundType = computed(() => appStore.backgroundType)
-
 const showLoadedBackground = computed(() =>
-  showBackground.value && currentUrl.value && isLoaded.value && !hasError.value,
+  hasCustomBackground.value && isLoaded.value && !hasError.value,
 )
 
 const showMediaBackground = computed(() =>
-  showBackground.value && currentUrl.value && !hasError.value && (backgroundType.value === 'video' || showLoadedBackground.value),
+  hasCustomBackground.value && !hasError.value && (backgroundType.value === 'video' || showLoadedBackground.value),
 )
 
-const showDefaultBackground = computed(() => {
-  if (!showBackground.value)
-    return false
-  if (!currentUrl.value)
-    return true
-  if (hasError.value)
-    return true
-  return false
-})
+const showDefaultBackground = computed(() => !hasCustomBackground.value)
 
 const showLoadingBackground = computed(() =>
-  showBackground.value && currentUrl.value && !isLoaded.value && !hasError.value,
+  hasCustomBackground.value && !isLoaded.value && !hasError.value,
+)
+
+const showFallbackBackground = computed(() =>
+  hasCustomBackground.value && hasError.value,
 )
 
 let imageLoader: HTMLImageElement | null = null
@@ -119,12 +119,44 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="showBackground" class="background-container" :style="backgroundContainerStyle">
+  <div class="background-container" :style="backgroundContainerStyle">
     <Transition name="fade">
-      <div v-if="showDefaultBackground" class="background-default" />
+      <div
+        v-if="showDefaultBackground"
+        class="absolute inset-0 mx-0 max-w-none overflow-hidden zoom-200 bg-slate-50 dark:bg-slate-900/50"
+      >
+        <div class="absolute top-0 left-1/2 -ml-152 h-100 w-325 dark:mask-[linear-gradient(white,transparent)]">
+          <div
+            class="absolute inset-0 bg-linear-to-r from-emerald-500 to-lime-300 mask-[radial-gradient(farthest-side_at_top,white,transparent)] opacity-40 dark:from-emerald-500/30 dark:to-lime-300/30 dark:opacity-100"
+          >
+            <svg
+              aria-hidden="true"
+              class="absolute inset-x-0 inset-y-[-50%] h-[200%] w-full skew-y-[-18deg] fill-black/40 stroke-black/50 mix-blend-overlay dark:fill-white/2.5 dark:stroke-white/5"
+            >
+              <defs>
+                <pattern id="_S_1_" width="72" height="56" patternUnits="userSpaceOnUse" x="-12" y="4">
+                  <path d="M.5 56V.5H72" fill="none" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" stroke-width="0" fill="url(#_S_1_)" /><svg
+                x="-12" y="4"
+                class="overflow-visible"
+              >
+                <rect stroke-width="0" width="73" height="57" x="288" y="168" />
+                <rect stroke-width="0" width="73" height="57" x="144" y="56" />
+                <rect stroke-width="0" width="73" height="57" x="504" y="168" />
+                <rect stroke-width="0" width="73" height="57" x="720" y="336" />
+              </svg>
+            </svg>
+          </div>
+        </div>
+      </div>
     </Transition>
     <Transition name="fade">
       <div v-if="showLoadingBackground" class="background-loading" />
+    </Transition>
+    <Transition name="fade">
+      <div v-if="showFallbackBackground" class="background-loading" />
     </Transition>
     <Transition name="fade">
       <div v-if="showMediaBackground" class="background-media" :style="backgroundStyle">
@@ -161,7 +193,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.background-default,
 .background-loading {
   position: absolute;
   inset: 0;
