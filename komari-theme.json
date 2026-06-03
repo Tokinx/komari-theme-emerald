@@ -22,6 +22,7 @@
       { "key": "stopEarth", "name": "停止地球旋转", "type": "switch", "default": false, "help": "开启后地球默认不自动旋转，用户仍可手动拖拽查看" },
       { "key": "hideEarth", "name": "隐藏地球", "type": "switch", "default": false, "help": "隐藏地球后仅显示总览卡片" },
       { "key": "hideGeneralCard", "name": "隐藏头部", "type": "switch", "default": false, "help": "隐藏地球和总览卡片" },
+      { "key": "disablePageAnimation", "name": "关闭页面动画", "type": "switch", "default": false, "help": "开启后切换节点分组时不显示总览卡和节点列表动画" },
       { "name": "备案设置", "type": "title" },
       { "key": "icpEnabled", "name": "显示备案号", "type": "switch", "default": false, "help": "在页脚显示网站备案号" },
       { "key": "icpNumber", "name": "备案号", "type": "string", "default": "", "help": "网站备案号（如：京ICP备12345678号）" },

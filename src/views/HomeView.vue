@@ -187,7 +187,8 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
           <TabsContent v-for="g in groups" :key="g.name" :value="g.name" class="pointer-events-auto">
             <TransitionGroup
               v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'"
-              appear
+              :appear="!appStore.disablePageAnimation"
+              :css="!appStore.disablePageAnimation"
               name="node-card-switch"
               tag="div"
               class="gap-3 grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]"

@@ -134,6 +134,14 @@ const useAppStore = defineStore('app', () => {
     return false
   })
 
+  const disablePageAnimation = computed<boolean>(() => {
+    const settings = publicSettings.value?.theme_settings
+    if (settings && typeof settings.disablePageAnimation === 'boolean') {
+      return settings.disablePageAnimation
+    }
+    return false
+  })
+
   // 计算属性：ICP 备案配置
   const icpEnabled = computed<boolean>(() => {
     const settings = publicSettings.value?.theme_settings
@@ -308,6 +316,7 @@ const useAppStore = defineStore('app', () => {
     stopEarth,
     hideEarth,
     hideGeneralCard,
+    disablePageAnimation,
     icpEnabled,
     icpNumber,
     icpUrl,

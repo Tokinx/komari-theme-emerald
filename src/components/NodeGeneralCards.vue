@@ -24,6 +24,11 @@ const financeCurrency = ref<CurrencyCode>('CNY')
 const excludeFreeNodes = ref(true)
 const summaryNodes = computed(() => props.nodes ?? nodesStore.nodes)
 const summaryTransitionKey = computed(() => props.transitionKey ?? summaryNodes.value.map(node => node.uuid).join('|'))
+const metricSwitchTransitionProps = computed(() => ({
+  name: 'metric-switch',
+  mode: 'out-in' as const,
+  css: !appStore.disablePageAnimation,
+}))
 
 function getMetricSwitchStyle(index: number): Record<string, string> {
   return {
@@ -142,7 +147,7 @@ onMounted(async () => {
               class="text-slate-500/20 group-hover:text-slate-500 transition-colors"
             />
           </div>
-          <Transition name="metric-switch" mode="out-in">
+          <Transition v-bind="metricSwitchTransitionProps">
             <div
               :key="`memory-${summaryTransitionKey}`"
               class="flex items-baseline gap-1 min-w-0"
@@ -172,7 +177,7 @@ onMounted(async () => {
               class="text-slate-500/20 group-hover:text-slate-500 transition-colors"
             />
           </div>
-          <Transition name="metric-switch" mode="out-in">
+          <Transition v-bind="metricSwitchTransitionProps">
             <div
               :key="`disk-${summaryTransitionKey}`"
               class="flex items-baseline gap-1 min-w-0"
@@ -205,7 +210,7 @@ onMounted(async () => {
             as="span" placement="top" :content="totalValueTooltip" class="min-w-0"
             content-class="whitespace-pre px-2 py-1 left-0 -translate-x-0 leading-normal"
           >
-            <Transition name="metric-switch" mode="out-in">
+            <Transition v-bind="metricSwitchTransitionProps">
               <div
                 :key="`remaining-value-${summaryTransitionKey}`"
                 class="flex items-baseline gap-1 min-w-0"
@@ -243,7 +248,7 @@ onMounted(async () => {
             class="min-w-0"
             content-class="whitespace-pre px-2 py-1 left-0 -translate-x-0 leading-normal"
           >
-            <Transition name="metric-switch" mode="out-in">
+            <Transition v-bind="metricSwitchTransitionProps">
               <div
                 :key="`traffic-${summaryTransitionKey}`"
                 class="flex items-baseline gap-1"
@@ -275,7 +280,7 @@ onMounted(async () => {
               class="text-slate-500/20 group-hover:text-slate-500 transition-colors"
             />
           </div>
-          <Transition name="metric-switch" mode="out-in">
+          <Transition v-bind="metricSwitchTransitionProps">
             <div
               :key="`speed-up-${summaryTransitionKey}`"
               class="flex items-baseline gap-1"
@@ -301,7 +306,7 @@ onMounted(async () => {
               class="text-slate-500/20 group-hover:text-slate-500 transition-colors"
             />
           </div>
-          <Transition name="metric-switch" mode="out-in">
+          <Transition v-bind="metricSwitchTransitionProps">
             <div
               :key="`speed-down-${summaryTransitionKey}`"
               class="flex items-baseline gap-1"

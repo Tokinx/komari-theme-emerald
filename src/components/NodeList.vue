@@ -221,7 +221,13 @@ function getCustomTags(node: NodeData): Array<string> {
         </div>
       </div>
 
-      <TransitionGroup appear name="node-row-switch" tag="div" class="flex flex-col gap-1">
+      <TransitionGroup
+        :appear="!appStore.disablePageAnimation"
+        :css="!appStore.disablePageAnimation"
+        name="node-row-switch"
+        tag="div"
+        class="flex flex-col gap-1"
+      >
         <div
           v-for="(node, index) in sortedNodes"
           :key="getRowTransitionKey(node)"
