@@ -18,6 +18,7 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
+    "publish": "bun scripts/publish.ts",
     "lint": "eslint . --fix --cache",
     "lint:eslint": "eslint . --fix --cache"
   },
