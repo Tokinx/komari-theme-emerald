@@ -25,9 +25,9 @@ const excludeFreeNodes = ref(true)
 const summaryNodes = computed(() => props.nodes ?? nodesStore.nodes)
 const summaryTransitionKey = computed(() => props.transitionKey ?? summaryNodes.value.map(node => node.uuid).join('|'))
 const metricSwitchTransitionProps = computed(() => ({
-  name: 'metric-switch',
-  mode: 'out-in' as const,
-  css: !appStore.disablePageAnimation,
+  ...(appStore.disablePageAnimation
+    ? { css: false }
+    : { name: 'metric-switch', mode: 'out-in' as const }),
 }))
 
 function getMetricSwitchStyle(index: number): Record<string, string> {
