@@ -19,7 +19,6 @@ defineOptions({ name: 'HomeView' })
 const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
-const VisitorInfoCard = defineAsyncComponent(() => import('@/components/VisitorInfoCard.vue'))
 
 const nodeItemStaggerMs = 35
 const nodeItemStaggerLimit = 12
@@ -139,8 +138,6 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
       :globe-nodes="groupNodeList"
       :transition-key="appStore.nodeSelectedGroup"
     />
-
-    <VisitorInfoCard v-if="appStore.visitorInfoCardEnabled" />
 
     <div class="node-info p-4 pt-0 flex flex-col gap-4 relative z-1 pointer-events-none" :class="!!appStore.hideGeneralCard && 'pt-4'">
       <div class="nodes">

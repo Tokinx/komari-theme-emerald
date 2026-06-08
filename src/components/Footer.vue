@@ -2,6 +2,7 @@
 import type { VersionInfo } from '@/utils/api'
 import { computed, onMounted, ref } from 'vue'
 import { DataTooltip } from '@/components/ui/data-tooltip'
+import VisitorInfoCard from '@/components/VisitorInfoCard.vue'
 import { useAppStore } from '@/stores/app'
 import { getSharedApi } from '@/utils/api'
 
@@ -30,8 +31,9 @@ const showFiling = computed(() => showIcp.value || showPolice.value)
 </script>
 
 <template>
-  <footer class="w-full sm:flex-row sm:gap-4 sm:items-center sm:justify-between max-w-[1280px] mx-auto p-4">
-    <div class="flex flex-row text-xs text-muted-foreground">
+  <VisitorInfoCard v-if="appStore.visitorInfoCardEnabled" />
+  <footer class="w-full sm:flex-row sm:gap-4 max-w-[1280px] mx-auto p-4">
+    <div class="flex flex-row items-center justify-between  text-xs text-muted-foreground">
       <div class="flex gap-1 items-center">
         Powered by
         <DataTooltip
@@ -47,7 +49,6 @@ const showFiling = computed(() => showIcp.value || showPolice.value)
           </a>
         </DataTooltip>
       </div>
-      <div class="flex-1" />
       <div class="flex flex-wrap gap-1 items-center">
         Theme by
         <DataTooltip
@@ -65,7 +66,7 @@ const showFiling = computed(() => showIcp.value || showPolice.value)
       </div>
     </div>
 
-    <div v-if="showFiling" class="flex flex-wrap gap-2 items-center justify-center sm:flex-shrink-0">
+    <div v-if="showFiling" class="flex flex-wrap gap-2 items-center justify-center sm:flex-shrink-0 pb-7">
       <a
         v-if="showIcp" :href="appStore.icpUrl" target="_blank" rel="noopener noreferrer"
         class="transition-opacity hover:opacity-70"
