@@ -142,9 +142,9 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
     <div class="node-info p-4 pt-0 flex flex-col gap-4 relative z-1 pointer-events-none" :class="!!appStore.hideGeneralCard && 'pt-4'">
       <div class="nodes">
         <Tabs v-model="appStore.nodeSelectedGroup" class="w-full flex-col gap-4">
-          <div class="flex gap-2 items-center flex-nowrap">
-            <div class="min-w-0 flex-1 overflow-x-auto rounded-sm pointer-events-none">
-              <TabsList class="w-max h-8 bg-background/50 backdrop-blur-xl rounded-md pointer-events-auto">
+          <div class="flex gap-2 items-center flex-nowrap pointer-events-none">
+            <div class="overflow-x-auto rounded-sm pointer-events-auto">
+              <TabsList class="w-max h-8 bg-background/50 backdrop-blur-xl rounded-md">
                 <TabsTrigger
                   v-for="g in groups" :key="g.name" :value="g.name"
                   class="h-6.5 flex-none shrink-0 text-xs border-none data-[state=active]:text-green-600 shadow-none rounded-sm"
@@ -153,7 +153,7 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
                 </TabsTrigger>
               </TabsList>
             </div>
-            <div class="search flex gap-2 items-center pointer-events-auto">
+            <div class="ml-auto search flex gap-2 items-center pointer-events-auto">
               <Button
                 variant="outline" size="icon" aria-label="卡片视图"
                 class="w-8 h-8 border-none  bg-background/50 backdrop-blur-xs shadow-none hover:bg-background/60 rounded-md"
