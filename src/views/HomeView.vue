@@ -139,11 +139,11 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
       :transition-key="appStore.nodeSelectedGroup"
     />
 
-    <div class="node-info p-4 pt-0 flex flex-col gap-4 relative z-1 pointer-events-none" :class="!!appStore.hideGeneralCard && 'pt-4'">
+    <div class="node-info p-4 pt-0 flex flex-col gap-4 relative z-1 md:pointer-events-none" :class="!!appStore.hideGeneralCard && 'pt-4'">
       <div class="nodes">
         <Tabs v-model="appStore.nodeSelectedGroup" class="w-full flex-col gap-4">
-          <div class="flex gap-2 items-center flex-nowrap pointer-events-none">
-            <div class="overflow-x-auto rounded-sm pointer-events-auto">
+          <div class="flex gap-2 items-center flex-nowrap">
+            <div class="overflow-x-auto rounded-sm md:pointer-events-auto">
               <TabsList class="w-max h-8 bg-background/50 backdrop-blur-xl rounded-md">
                 <TabsTrigger
                   v-for="g in groups" :key="g.name" :value="g.name"
