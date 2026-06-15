@@ -155,24 +155,90 @@ async function fetchVisitorGeo(): Promise<VisitorGeoData | null> {
   const loaders = [
     async (): Promise<VisitorGeoData> => {
       const data = await fetchJson<{
-        status: string
-        country?: string
-        countryCode?: string
-        regionName?: string
-        city?: string
-        query?: string
+        ip?: string
         isp?: string
-      }>('https://ip-api.com/json/?lang=zh-CN&fields=status,country,countryCode,regionName,city,query,isp', 4000)
+        organization?: string
+        asn_organization?: string
+        country?: string
+        country_code?: string
+        region?: string
+        city?: string
+      }>('https://api.ip.sb/geoip', 4000)
 
-      if (data.status !== 'success' || !data.query) {
-        throw new Error('ip-api unavailable')
+      if (!data.ip) {
+        throw new Error('ip.sb unavailable')
       }
 
       return {
-        ip: data.query,
-        isp: data.isp || '未知运营商',
-        location: [data.country, data.city || data.regionName].filter(Boolean).join(' · ') || '未知位置',
-        countryCode: data.countryCode || '',
+        ip: data.ip,
+        isp: data.isp || data.organization || data.asn_organization || '未知运营商',
+        location: [data.country, data.city || data.region].filter(Boolean).join(' · ') || '未知位置',
+        countryCode: data.country_code || '',
+      }
+    },
+    async (): Promise<VisitorGeoData> => {
+      const data = await fetchJson<{
+        success?: boolean
+        message?: string
+        ip?: string
+        country?: string
+        country_code?: string
+        region?: string
+        city?: string
+        connection?: {
+          isp?: string
+          org?: string
+        }
+      }>('https://ipwho.is/', 4000)
+
+      if (data.success === false || !data.ip) {
+        throw new Error(data.message || 'ipwho.is unavailable')
+      }
+
+      return {
+        ip: data.ip,
+        isp: data.connection?.isp || data.connection?.org || '未知运营商',
+        location: [data.country, data.city || data.region].filter(Boolean).join(' · ') || '未知位置',
+        countryCode: data.country_code || '',
+      }
+    },
+    async (): Promise<VisitorGeoData> => {
+      const data = await fetchJson<{
+        ip?: string
+        company?: {
+          name?: string
+        }
+        asn?: {
+          org?: string
+          descr?: string
+          country?: string
+        }
+        datacenter?: {
+          datacenter?: string
+          country?: string
+          region?: string
+          city?: string
+        }
+        location?: {
+          country?: string
+          country_code?: string
+          state?: string
+          city?: string
+        }
+      }>('https://api.ipapi.is/', 4000)
+
+      if (!data.ip) {
+        throw new Error('ipapi.is unavailable')
+      }
+
+      return {
+        ip: data.ip,
+        isp: data.asn?.org || data.company?.name || data.datacenter?.datacenter || data.asn?.descr || '未知运营商',
+        location: [
+          data.location?.country || data.datacenter?.country,
+          data.location?.city || data.location?.state || data.datacenter?.city || data.datacenter?.region,
+        ].filter(Boolean).join(' · ') || '未知位置',
+        countryCode: data.location?.country_code || data.asn?.country || data.datacenter?.country || '',
       }
     },
     async (): Promise<VisitorGeoData> => {
