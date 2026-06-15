@@ -864,7 +864,7 @@ onMounted(() => {
       <!-- 图表网格 -->
       <div v-else class="gap-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         <!-- CPU 卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">CPU</span>
@@ -881,7 +881,7 @@ onMounted(() => {
         </CardX>
 
         <!-- 内存卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">内存</span>
@@ -907,7 +907,7 @@ onMounted(() => {
         </CardX>
 
         <!-- 磁盘卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">磁盘</span>
@@ -932,7 +932,7 @@ onMounted(() => {
         </CardX>
 
         <!-- 网络卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">网络</span>
@@ -962,7 +962,7 @@ onMounted(() => {
         </CardX>
 
         <!-- 连接数卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">连接</span>
@@ -979,7 +979,7 @@ onMounted(() => {
         </CardX>
 
         <!-- 进程卡片 -->
-        <CardX size="small" class="bg-background/50 border-none hover:bg-background transition-all rounded-md">
+        <CardX size="small" class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
           <template #header>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold">进程</span>

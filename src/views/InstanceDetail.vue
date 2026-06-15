@@ -246,7 +246,7 @@ const trafficProgressStyle = computed(() => ({
 <template>
   <div class="instance-detail space-y-4">
     <div v-if="!data" class="p-4">
-      <CardX>
+      <CardX class="bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md">
         <Empty description="节点不存在或已被删除">
           <template #extra>
             <Button @click="router.push('/')">
@@ -277,7 +277,7 @@ const trafficProgressStyle = computed(() => ({
       <div class="px-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <CardX
           v-for="item in metricCards" :key="item.label" hoverable size="small"
-          class="group h-full bg-background/50 border-none hover:bg-background transition-all rounded-md"
+          class="group h-full bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md"
           content-class="h-full !p-3"
         >
           <div class="flex h-full min-h-10 md:min-h-18 flex-col justify-between gap-3">
@@ -306,7 +306,7 @@ const trafficProgressStyle = computed(() => ({
       <div class="px-4 gap-4 grid grid-cols-1 lg:grid-cols-2">
         <CardX
           title="硬件信息" size="small"
-          class="group h-full bg-background/50 border-none hover:bg-background transition-all rounded-md"
+          class="group h-full bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md"
         >
           <div class="gap-3 grid grid-cols-3">
             <div
@@ -324,7 +324,7 @@ const trafficProgressStyle = computed(() => ({
 
         <CardX
           title="系统信息" size="small"
-          class="group h-full bg-background/50 border-none hover:bg-background transition-all rounded-md"
+          class="group h-full bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md"
         >
           <div class="gap-3 grid grid-cols-1 sm:grid-cols-2">
             <div
@@ -350,7 +350,7 @@ const trafficProgressStyle = computed(() => ({
 
         <CardX
           title="存储信息" size="small"
-          class="group h-full bg-background/50 border-none hover:bg-background transition-all rounded-md"
+          class="group h-full bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md"
         >
           <div class="gap-3 grid grid-cols-3">
             <div
@@ -368,7 +368,7 @@ const trafficProgressStyle = computed(() => ({
 
         <CardX
           title="网络信息" size="small"
-          class="group h-full bg-background/50 border-none hover:bg-background transition-all rounded-md"
+          class="group h-full bg-background/50 backdrop-blur-xs border-none hover:bg-background transition-all rounded-md"
           content-class="pt-0"
         >
           <div class="gap-3 grid grid-cols-2">

@@ -726,7 +726,7 @@ onMounted(() => {
             >
               平滑峰值
             </Button>
-            <DataTooltip content="使用 EWMA 算法平滑数据并过滤突变值" placement="top" content-class="whitespace-nowrap text-[11px]">
+            <DataTooltip content="使用 EWMA 算法平滑数据并过滤突变值" placement="top" content-class="whitespace-nowrap text-[11px] backdrop-blur-xl">
               <Button variant="ghost" size="icon-xs" class="text-slate-500">
                 <Icon icon="carbon:information" :width="14" :height="14" />
               </Button>
@@ -735,7 +735,7 @@ onMounted(() => {
         </div>
 
         <!-- 图表 -->
-        <div class="h-80 bg-background/50 p-4 rounded-md">
+        <div class="h-80 bg-background/50 backdrop-blur-xl hover:bg-background p-4 rounded-md transition-all">
           <VChart :option="pingChartOption" autoresize />
         </div>
       </template>
