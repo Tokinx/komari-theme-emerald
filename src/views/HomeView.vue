@@ -242,8 +242,8 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
     <Dialog v-model:open="pingDialogOpen">
       <DialogContent
         v-if="selectedPingNode"
-        class="max-w-6xl gap-0 overflow-hidden border-none bg-background/50 p-0 backdrop-blur-sm"
-        overlay-class="opacity-50"
+        class="max-w-6xl gap-0 overflow-hidden bg-background/60 p-0 shadow-[0_0_2rem_rgba(0,0,0,0.1)]"
+        overlay-class="bg-background/30"
       >
         <DialogHeader class="flex h-13 flex-row items-center px-4">
           <DialogTitle class="truncate">
