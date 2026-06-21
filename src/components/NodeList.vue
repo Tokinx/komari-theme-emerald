@@ -355,20 +355,32 @@ function getCustomTags(node: NodeData): Array<string> {
 
               <!-- 内存 -->
               <div v-else-if="col.key === 'mem'" class="group">
-                <div class="space-y-1">
-                  <div class="text-[10px] text-muted-foreground truncate">
-                    <span class="inline group-hover:hidden">
-                      {{ ((node.ram ?? 0) / (node.mem_total || 1) * 100).toFixed(1) }}%
-                    </span>
-                    <span class="hidden group-hover:inline">
-                      {{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}
-                    </span>
+                <DataTooltip placement="top" class="block" content-class="px-1.5 py-1 text-[10px]">
+                  <div class="space-y-1">
+                    <div class="text-[10px] text-muted-foreground truncate">
+                      <span class="inline group-hover:hidden">
+                        {{ ((node.ram ?? 0) / (node.mem_total || 1) * 100).toFixed(1) }}%
+                      </span>
+                      <span class="hidden group-hover:inline">
+                        {{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}
+                      </span>
+                    </div>
+                    <ProgressThin
+                      :percentage="(node.ram ?? 0) / (node.mem_total || 1) * 100"
+                      :status="getStatus((node.ram ?? 0) / (node.mem_total || 1) * 100)" :height="4"
+                    />
                   </div>
-                  <ProgressThin
-                    :percentage="(node.ram ?? 0) / (node.mem_total || 1) * 100"
-                    :status="getStatus((node.ram ?? 0) / (node.mem_total || 1) * 100)" :height="4"
-                  />
-                </div>
+                  <template #content>
+                    <div class="flex items-center justify-between gap-3 whitespace-nowrap">
+                      <span class="text-background/70">USED</span>
+                      <span>{{ formatBytes(node.ram ?? 0) }}</span>
+                    </div>
+                    <div v-if="node.swap" class="flex items-center justify-between gap-3 whitespace-nowrap">
+                      <span class="text-background/70">SWAP</span>
+                      <span>{{ formatBytes(node.swap ?? 0) }}</span>
+                    </div>
+                  </template>
+                </DataTooltip>
               </div>
 
               <!-- 硬盘 -->

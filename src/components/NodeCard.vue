@@ -191,9 +191,24 @@ function openPingDialog() {
               <span>{{ memPercentage.toFixed(1) }}%</span>
             </div>
             <ProgressThin :percentage="memPercentage" :status="memStatus" :height="4" />
-            <div class="text-[11px] text-muted-foreground truncate">
-              {{ formatBytes(props.node.ram ?? 0) }} / {{ formatBytes(props.node.mem_total ?? 0) }}
-            </div>
+            <DataTooltip
+              placement="top" class="block"
+              content-class="px-1.5 py-1 text-[10px]"
+            >
+              <div class="text-[11px] text-muted-foreground truncate">
+                {{ formatBytes(props.node.ram ?? 0) }} / {{ formatBytes(props.node.mem_total ?? 0) }}
+              </div>
+              <template #content>
+                <div class="flex items-center justify-between gap-3 whitespace-nowrap">
+                  <span class="text-background/70">USED</span>
+                  <span>{{ formatBytes(props.node.ram ?? 0) }}</span>
+                </div>
+                <div v-if="props.node.swap" class="flex items-center justify-between gap-3 whitespace-nowrap">
+                  <span class="text-background/70">SWAP</span>
+                  <span>{{ formatBytes(props.node.swap ?? 0) }}</span>
+                </div>
+              </template>
+            </DataTooltip>
           </div>
 
           <!-- 硬盘 -->
