@@ -112,7 +112,7 @@ function maskIpv4Address(value: string): string | null {
 
   return [
     first,
-    '*'.repeat(second.length),
+    second,
     '*'.repeat(third.length),
     fourth,
   ].join('.')
@@ -136,28 +136,15 @@ function maskIpv6Address(value: string): string | null {
     return null
   }
 
-  const visibleIndexes = segments
-    .map((segment, index) => segment ? index : -1)
-    .filter(index => index >= 0)
-
-  if (visibleIndexes.length === 0) {
-    return null
+  let maskedAddress = address
+  if (address.includes('::')) {
+    const [prefix = ''] = address.split('::')
+    const visibleSegments = prefix ? prefix.split(':').filter(Boolean).slice(0, 4) : []
+    maskedAddress = visibleSegments.length > 0 ? `${visibleSegments.join(':')}::*` : '::*'
   }
-
-  const firstVisibleIndex = visibleIndexes[0]
-  const lastVisibleIndex = visibleIndexes.at(-1)
-  if (firstVisibleIndex === undefined || lastVisibleIndex === undefined) {
-    return null
+  else if (segments.length > 4) {
+    maskedAddress = `${segments.slice(0, 4).join(':')}:*`
   }
-
-  const maskedAddress = segments
-    .map((segment, index) => {
-      if (!segment || index === firstVisibleIndex || index === lastVisibleIndex) {
-        return segment
-      }
-      return '*'.repeat(segment.length)
-    })
-    .join(':')
 
   return scope ? `${maskedAddress}%${scope}` : maskedAddress
 }
