@@ -206,7 +206,7 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
               </div>
             </div>
           </div>
-          <TabsContent v-for="g in groups" :key="g.name" :value="g.name" class="pointer-events-auto">
+          <TabsContent :key="appStore.nodeSelectedGroup" :value="appStore.nodeSelectedGroup" class="pointer-events-auto">
             <TransitionGroup
               v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'"
               :appear="!appStore.disablePageAnimation"
