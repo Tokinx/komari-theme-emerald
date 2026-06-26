@@ -23,6 +23,11 @@ function getCommitHash(): string {
   }
 }
 
+function shouldIgnoreRollupWarning(warning: { code?: string, id?: string }): boolean {
+  return warning.code === 'INVALID_ANNOTATION'
+    && warning.id?.includes('/node_modules/@vueuse/core/dist/index.js') === true
+}
+
 /**
  * Vite 插件：构建后打包 Komari 主题 Zip
  * theme.zip
@@ -104,6 +109,11 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 600,
     rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        if (shouldIgnoreRollupWarning(warning))
+          return
+        defaultHandler(warning)
+      },
       output: {
         manualChunks: {
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
