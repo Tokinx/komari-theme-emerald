@@ -87,9 +87,8 @@ function shouldKeepStaticRedraw(): boolean {
 // 减少高采样导致的性能问题
 function getCappedDpr(): number {
   if (typeof window === 'undefined')
-    return 1.5
-  const raw = window.devicePixelRatio || 1
-  return Math.min(Math.max(raw, 1.5), 2)
+    return 1
+  return window.devicePixelRatio || 1
 }
 
 interface RegionCluster {
@@ -297,7 +296,7 @@ const { pause: pauseRaf, resume: resumeRaf } = useRafFn(
     }
     updateGlobeFrame()
   },
-  { immediate: false /* fpsLimit: 60 */ },
+  { immediate: false }, // , fpsLimit: 30
 )
 
 function startGlobe() {
@@ -315,7 +314,7 @@ function startGlobe() {
   })
   // documentVisibility 同步可读；useElementVisibility 需等 IntersectionObserver 首回调
   // 先按"前台"启动，若实际不可见，shouldRender 的 watch 会在下一帧 pause
-  if (documentVisibility.value === 'visible')
+  if (documentVisibility.value === 'visible' && shouldAutoRotate.value)
     resumeRaf()
 }
 
@@ -356,8 +355,6 @@ watch(
   ([width, height]) => {
     if (!globe || width <= 0 || height <= 0)
       return
-    if (!shouldAutoRotate.value)
-      triggerStaticRedrawWindow(600)
     updateGlobeFrame()
   },
 )
@@ -389,14 +386,14 @@ watch(
 watch(shouldRender, (visible) => {
   if (!globe)
     return
-  if (visible) {
-    if (!shouldAutoRotate.value)
-      triggerStaticRedrawWindow()
+  if (visible && shouldAutoRotate.value) {
     resumeRaf()
+    return
   }
-  else {
-    pauseRaf()
-  }
+
+  pauseRaf()
+  if (visible)
+    updateGlobeFrame()
 })
 
 function onPointerDown(e: PointerEvent) {
