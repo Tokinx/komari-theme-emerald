@@ -8,6 +8,8 @@ type WorldGeoJson = Exclude<
 
 const WORLD_MAP_NAME = 'komari-world'
 const WORLD_MAP_ASSET_URL = `${import.meta.env.BASE_URL}maps/world.json`
+const WORLD_MAP_CACHE_KEY_PREFIX = 'komari-theme-emerald:world-map'
+const WORLD_MAP_CACHE_KEY = `${WORLD_MAP_CACHE_KEY_PREFIX}` // :${__BUILD_GIT_HASH__}
 
 const ECHARTS_WORLD_NAME_TO_CODE: Record<string, string> = {
   'aland': 'AX',
@@ -50,6 +52,73 @@ const ECHARTS_WORLD_NAME_TO_CODE: Record<string, string> = {
 let worldMapPromise: Promise<string> | null = null
 let worldMapRegistered = false
 
+function isValidWorldGeoJson(value: unknown): value is WorldGeoJson {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && 'type' in value
+    && 'features' in value
+    && (value as { type?: unknown }).type === 'FeatureCollection'
+    && Array.isArray((value as { features?: unknown }).features),
+  )
+}
+
+function pruneStaleWorldMapCache(): void {
+  if (typeof window === 'undefined')
+    return
+
+  try {
+    for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.localStorage.key(index)
+      if (!key?.startsWith(WORLD_MAP_CACHE_KEY_PREFIX) || key === WORLD_MAP_CACHE_KEY)
+        continue
+      window.localStorage.removeItem(key)
+    }
+  }
+  catch {
+  }
+}
+
+function readCachedWorldGeoJson(): WorldGeoJson | null {
+  if (typeof window === 'undefined')
+    return null
+
+  try {
+    const raw = window.localStorage.getItem(WORLD_MAP_CACHE_KEY)
+    if (!raw)
+      return null
+
+    const parsed = JSON.parse(raw) as { data?: unknown }
+    if (!isValidWorldGeoJson(parsed.data)) {
+      window.localStorage.removeItem(WORLD_MAP_CACHE_KEY)
+      return null
+    }
+
+    return parsed.data
+  }
+  catch {
+    return null
+  }
+}
+
+function writeCachedWorldGeoJson(worldGeoJson: WorldGeoJson): void {
+  if (typeof window === 'undefined')
+    return
+
+  try {
+    window.localStorage.setItem(
+      WORLD_MAP_CACHE_KEY,
+      JSON.stringify({
+        buildHash: __BUILD_GIT_HASH__,
+        data: worldGeoJson,
+      }),
+    )
+    pruneStaleWorldMapCache()
+  }
+  catch {
+  }
+}
+
 function normalizeCountryName(name: string): string {
   return name.trim().toLowerCase()
 }
@@ -90,11 +159,18 @@ function normalizeWorldGeoJson(worldGeoJson: WorldGeoJson): WorldGeoJson {
 }
 
 async function loadWorldGeoJson(): Promise<WorldGeoJson> {
+  const cachedWorldGeoJson = readCachedWorldGeoJson()
+  if (cachedWorldGeoJson)
+    return cachedWorldGeoJson
+
   const response = await fetch(WORLD_MAP_ASSET_URL)
   if (!response.ok) {
     throw new Error(`Failed to load world map asset: ${response.status}`)
   }
-  return response.json() as Promise<WorldGeoJson>
+
+  const worldGeoJson = normalizeWorldGeoJson(await response.json() as WorldGeoJson)
+  writeCachedWorldGeoJson(worldGeoJson)
+  return worldGeoJson
 }
 
 export async function ensureWorldMapRegistered(): Promise<string> {
@@ -103,7 +179,6 @@ export async function ensureWorldMapRegistered(): Promise<string> {
 
   if (!worldMapPromise) {
     worldMapPromise = loadWorldGeoJson()
-      .then(normalizeWorldGeoJson)
       .then((worldGeoJson) => {
         registerMap(WORLD_MAP_NAME, worldGeoJson)
         worldMapRegistered = true
