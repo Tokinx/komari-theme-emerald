@@ -597,18 +597,14 @@ onMounted(() => {
       <div class="flex gap-2 items-center">
         <Button
           variant="ghost" size="xs" class="h-7 rounded-sm border-none bg-background/60 hover:bg-background"
-          :class="[
-            selectedTaskIds.length === tasks.length ? 'bg-background !text-emerald-600' : '',
-          ]"
+          :class="[selectedTaskIds.length === tasks.length && 'bg-background !text-emerald-600']"
           @click="showAllTasks"
         >
           全选
         </Button>
         <Button
           variant="ghost" size="xs" class="h-7 rounded-sm border-none bg-background/60 hover:bg-background"
-          :class="[
-            !selectedTaskIds.length && 'bg-background !text-emerald-600',
-          ]"
+          :class="[!selectedTaskIds.length && 'bg-background !text-emerald-600']"
           @click="hideAllTasks"
         >
           全不选
@@ -715,18 +711,14 @@ onMounted(() => {
           <!-- 延迟可视化开关 -->
           <Button
             variant="ghost" size="xs" class="h-7 rounded-sm border-none bg-background/60 hover:bg-background"
-            :class="[
-              showDelay && 'bg-background !text-emerald-600',
-            ]" @click="showDelay = !showDelay"
+            :class="[showDelay && 'bg-background !text-emerald-600']" @click="showDelay = !showDelay"
           >
             延迟
           </Button>
           <!-- 丢包可视化开关 -->
           <Button
             variant="ghost" size="xs" class="h-7 rounded-sm border-none bg-background/60 hover:bg-background"
-            :class="[
-              showLoss && 'bg-background !text-emerald-600',
-            ]" @click="showLoss = !showLoss"
+            :class="[showLoss && 'bg-background !text-emerald-600']" @click="showLoss = !showLoss"
           >
             丢包
           </Button>
@@ -734,9 +726,7 @@ onMounted(() => {
           <div class="flex gap-2 items-center">
             <Button
               variant="ghost" size="xs" class="h-7 rounded-sm border-none bg-background/60 hover:bg-background"
-              :class="[
-                cutPeak && 'bg-background !text-emerald-600',
-              ]" @click="cutPeak = !cutPeak"
+              :class="[cutPeak && 'bg-background !text-emerald-600']" @click="cutPeak = !cutPeak"
             >
               平滑峰值
             </Button>

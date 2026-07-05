@@ -28,6 +28,7 @@ const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byt
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, 'hour')
 const offlineTime = computed(() => formatDateTime(props.node.time))
+const expiredDate = computed(() => formatDateTime(props.node.expired_at, 'YYYY-MM-DD'))
 
 const cpuStatus = computed(() => getStatus(props.node.cpu ?? 0))
 const memPercentage = computed(() => (props.node.ram ?? 0) / (props.node.mem_total || 1) * 100)
@@ -93,20 +94,19 @@ const priceTags = computed<PriceTagItem[]>(() => {
   const tags: PriceTagItem[] = []
   const lang = appStore.lang
   const node = props.node
-  if (node.price !== 0) {
-    const days = getDaysUntilExpired(node.expired_at)
-    const status = getExpireStatus(node.expired_at)
-    const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
+  const days = getDaysUntilExpired(node.expired_at)
+  const status = getExpireStatus(node.expired_at)
+  const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
+  if (node.price !== 0)
     tags.push({ text: priceText })
-    if (status === 'expired')
-      tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
-    else if (status === 'long_term')
-      tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
-    else if (lang === 'zh-CN')
-      tags.push({ text: `剩余 ${days} 天`, prefix: '剩余 ', highlightValue: String(days), suffix: ' 天' })
-    else
-      tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
-  }
+  if (status === 'expired')
+    tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
+  else if (status === 'long_term')
+    tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
+  else if (lang === 'zh-CN')
+    tags.push({ text: `余 ${days} 天`, prefix: '余 ', highlightValue: String(days), suffix: ' 天' })
+  else
+    tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
   return tags
 })
 
@@ -136,18 +136,15 @@ function openPingDialog() {
   >
     <template #header>
       <div class="flex gap-2 min-w-0 items-center">
-        <DataTooltip
-          placement="right"
-          :content="formatUptime(props.node.uptime ?? 0)"
-          class="size-2 rounded-full" :class="[props.node.online ? 'bg-green-600' : 'bg-red-600']"
-          content-class="whitespace-nowrap"
-        >
+        <div class="size-2 rounded-full relative" :class="[props.node.online ? 'bg-emerald-600' : 'bg-red-600']">
           <div
             class="animate-ping absolute inset-0 rounded-full opacity-50"
-            :class="[props.node.online ? 'bg-green-600' : 'bg-red-600']"
+            :class="[props.node.online ? 'bg-emerald-600' : 'bg-red-600']"
           />
-        </DataTooltip>
-        <span class="text-md font-bold flex-1 min-w-0 truncate">{{ props.node.name }}</span>
+        </div>
+        <div class="text-md font-bold flex-1 min-w-0 truncate">
+          {{ props.node.name }}
+        </div>
       </div>
     </template>
 
@@ -163,13 +160,7 @@ function openPingDialog() {
 
     <template #default>
       <div class="flex flex-col gap-3">
-        <div class="gap-3 grid grid-cols-2">
-          <!-- <div class="flex flex-col gap-1 col-span-2">
-                <div class="flex gap-2 items-center">
-                  <img :src="getOSImage(props.node.os)" :alt="getOSName(props.node.os)" class="size-4">
-                  <span class="text-xs">{{ getOSName(props.node.os) }}</span>
-                </div>
-              </div> -->
+        <div class="gap-x-3 gap-y-1 grid grid-cols-2">
           <!-- CPU -->
           <div class="flex flex-col gap-1">
             <div class="w-full text-xs flex flex-row justify-between">
@@ -194,20 +185,13 @@ function openPingDialog() {
               <span>{{ memPercentage.toFixed(1) }}%</span>
             </div>
             <ProgressThin :percentage="memPercentage" :status="memStatus" :height="4" />
-            <DataTooltip
-              placement="top" class="block"
-              content-class="px-1.5 py-1 text-[10px]"
-            >
+            <DataTooltip placement="top" class="block" :content-class="[!props.node.swap && '!hidden']">
               <div class="text-[11px] text-muted-foreground truncate">
                 {{ formatBytes(props.node.ram ?? 0) }} / {{ formatBytes(props.node.mem_total ?? 0) }}
               </div>
               <template #content>
                 <div class="flex items-center justify-between gap-3 whitespace-nowrap">
-                  <span class="text-background/70">USED</span>
-                  <span>{{ formatBytes(props.node.ram ?? 0) }}</span>
-                </div>
-                <div v-if="props.node.swap" class="flex items-center justify-between gap-3 whitespace-nowrap">
-                  <span class="text-background/70">SWAP</span>
+                  <span class="text-background/70">Swap</span>
                   <span>{{ formatBytes(props.node.swap ?? 0) }}</span>
                 </div>
               </template>
@@ -237,34 +221,43 @@ function openPingDialog() {
               <span>{{ trafficUsedPercentage.toFixed(1) }}%</span>
             </div>
             <ProgressThin :percentage="trafficUsedPercentage" status="success" :height="4" />
-            <div class="text-[11px] text-muted-foreground truncate">
-              {{ formatBytes(trafficUsed) }} /
-              <template v-if="showTrafficProgress(node)">
-                {{ formatBytes(props.node.traffic_limit) }}
+            <DataTooltip placement="top" class="block">
+              <div class="text-[11px] text-muted-foreground truncate">
+                {{ formatBytes(trafficUsed) }} /
+                <template v-if="showTrafficProgress(node)">
+                  {{ formatBytes(props.node.traffic_limit) }}
+                </template>
+                <template v-else>
+                  ∞
+                </template>
+              </div>
+              <template #content>
+                <div class="flex items-center justify-between gap-3 whitespace-nowrap">
+                  <div class="text-[11px] flex flex-col">
+                    <div class="flex flex-row items-center gap-1">
+                      <Icon icon="tabler:chevron-up" width="12" height="12" />
+                      {{ formatBytes(props.node.net_total_up ?? 0) }}
+                    </div>
+                    <div class="flex flex-row items-center gap-1">
+                      <Icon icon="tabler:chevron-down" width="12" height="12" />
+                      {{ formatBytes(props.node.net_total_down ?? 0) }}
+                    </div>
+                  </div>
+                </div>
               </template>
-              <template v-else>
-                ∞
-              </template>
-            </div>
+            </DataTooltip>
           </div>
         </div>
-        <div class="gap-1.5 grid grid-cols-6 relative">
-          <div
-            v-if="!props.node.online"
-            class="absolute inset-0 flex flex-col gap-1 items-center justify-center z-1 text-center" aria-hidden="true"
-          >
-            <div class="text-sm font-medium text-destructive">
-              离线
-            </div>
-            <div class="text-xs text-muted-foreground">
-              {{ offlineTime }}
-            </div>
-          </div>
-          <div
-            class="flex flex-col gap-0.5 p-1 pl-2 rounded-sm bg-slate-500/5"
-            :class="[priceTags.length ? 'col-span-2' : 'col-span-3', !props.node.online ? 'blur-xs opacity-60' : '']"
-          >
-            <div class="text-[11px] flex flex-col">
+        <div
+          class="flex flex-col gap-y-2 text-[11px] text-muted-foreground relative rounded-sm"
+          :class="[!props.node.online ? 'blur-xs opacity-60' : '']"
+        >
+          <div class="flex items-center">
+            <span class="truncate">
+              速率
+            </span>
+            <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+            <div class="truncate flex flex-row gap-1">
               <div class="text-green-600 flex flex-row items-center gap-1">
                 <Icon icon="tabler:chevron-up" width="12" height="12" />
                 {{ formatBytesPerSecond(props.node.net_out ?? 0) }}
@@ -275,99 +268,97 @@ function openPingDialog() {
               </div>
             </div>
           </div>
-          <div
-            class="flex flex-col gap-0.5 p-1 pl-2 rounded-sm bg-slate-500/5"
-            :class="[priceTags.length ? 'col-span-2' : 'col-span-3', !props.node.online ? 'blur-xs opacity-60' : '']"
-          >
-            <div class="text-[11px] text-muted-foreground flex flex-col">
-              <div class="flex flex-row items-center gap-1">
-                <Icon icon="tabler:upload" width="12" height="12" />
-                {{ formatBytes(props.node.net_total_up ?? 0) }}
-              </div>
-              <div class="flex flex-row items-center gap-1">
-                <Icon icon="tabler:download" width="12" height="12" />
-                {{ formatBytes(props.node.net_total_down ?? 0) }}
-              </div>
-            </div>
-          </div>
-          <div
-            v-if="priceTags.length" class="col-span-2 flex flex-col gap-0.5 p-1 pl-2 rounded-sm bg-slate-500/5"
-            :class="[!props.node.online ? 'blur-xs opacity-60' : '']"
-          >
-            <div class="text-[11px] text-muted-foreground flex flex-col">
-              <div v-for="(tag, index) in priceTags" :key="index" class="flex flex-row items-center gap-1">
-                <template v-if="tag.highlightValue">
-                  <span>{{ tag.prefix }}</span>
-                  <span :class="remainingTimeTagClass">{{ tag.highlightValue }}</span>
-                  <span>{{ tag.suffix }}</span>
-                </template>
-                <template v-else>
-                  {{ tag.text }}
-                </template>
-              </div>
-            </div>
-          </div>
-          <!-- 运行时长 -->
-          <!-- <div
-            class="col-span-6 flex flex-row gap-2 items-center p-1 rounded-sm bg-slate-500/5 justify-center text-[11px] text-muted-foreground"
-            :class="[!props.node.online ? 'blur-xs opacity-60' : '']"
-          >
-            <span class="inline-flex flex-row gap-1 items-center">
-              {{ formatUptime(props.node.uptime ?? 0) }}
+          <div class="flex items-center justify-between">
+            <span class="truncate">
+              {{ props.node.online ? '在线' : `离线` }}
             </span>
-          </div> -->
-          <!-- 延迟 -->
-          <div
-            role="button"
-            tabindex="0"
-            class="group/panel relative col-span-3 flex h-10 cursor-pointer flex-col gap-1.5 rounded-sm bg-slate-500/5 p-1.5 text-left transition-colors hover:bg-slate-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            :class="[!props.node.online ? 'blur-xs opacity-60' : '']" :title="latencyPanelTooltip"
-            :aria-label="`${props.node.name} 延迟`"
-            @click.stop="openPingDialog"
-            @keydown.enter.stop.prevent="openPingDialog"
-            @keydown.space.stop.prevent="openPingDialog"
-          >
-            <div class="flex items-center justify-between gap-2 text-[11px] leading-none relative">
-              <span class="text-muted-foreground">延迟</span>
-              <span class="font-medium text-foreground/85">{{ latencyDisplay }}</span>
-            </div>
-            <div
-              class="grid h-full items-end gap-[1px] opacity-80 group-hover/panel:opacity-100"
-              :style="{ gridTemplateColumns: `repeat(${latencyRenderBars.length}, minmax(0, 1fr))` }"
-            >
-              <DataTooltip v-for="bar in latencyRenderBars" :key="bar.key" placement="top" :content="bar.tooltip" class="h-full w-full">
-                <span
-                  class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-160 group-hover/panel:opacity-60 group-hover/data-tooltip:!opacity-100"
-                  :class="bar.className"
-                />
-              </DataTooltip>
-            </div>
+            <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+            <span class="truncate">
+              <template v-if="!props.node.online">
+                {{ offlineTime }}
+              </template>
+              <template v-else-if="props.node.uptime > 0">
+                {{ props.node.uptime > 0 ? formatUptime(props.node.uptime) : '' }}
+              </template>
+            </span>
           </div>
-          <!-- 丢包 -->
-          <div
-            role="button"
-            tabindex="0"
-            class="group/panel relative col-span-3 flex h-10 cursor-pointer flex-col gap-1.5 rounded-sm bg-slate-500/5 p-1.5 text-left transition-colors hover:bg-slate-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            :class="[!props.node.online ? 'blur-xs opacity-60' : '']" :title="lossPanelTooltip"
-            :aria-label="`${props.node.name} 丢包`"
-            @click.stop="openPingDialog"
-            @keydown.enter.stop.prevent="openPingDialog"
-            @keydown.space.stop.prevent="openPingDialog"
-          >
-            <div class="flex items-center justify-between gap-2 text-[11px] leading-none">
-              <span class="text-muted-foreground">丢包</span>
-              <span class="font-medium text-foreground/85">{{ lossDisplay }}</span>
-            </div>
+          <div class="flex items-center justify-between">
+            <span class="truncate">
+              费用
+            </span>
+            <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+            <DataTooltip placement="left" :content="expiredDate" content-class="whitespace-nowrap right-0 mr-0">
+              <span class="truncate flex flex-row gap-1">
+                <template v-for="(tag, index) in priceTags" :key="tag">
+                  <span class="inline-flex flex-row gap-1 items-center">
+                    <template v-if="tag.highlightValue">
+                      <span>{{ tag.prefix }}</span>
+                      <span :class="remainingTimeTagClass">{{ tag.highlightValue }}</span>
+                      <span>{{ tag.suffix }}</span>
+                    </template>
+                    <template v-else>
+                      {{ tag.text }}
+                    </template>
+                  </span>
+                  <span v-if="index < priceTags.length - 1" :key="`${tag}-${index}`">·</span>
+                </template>
+              </span>
+            </DataTooltip>
+          </div>
+          <div class="grid grid-cols-6 gap-x-3">
+            <!-- 延迟 -->
             <div
-              class="grid h-full items-end gap-[1px] opacity-80 group-hover/panel:opacity-100"
-              :style="{ gridTemplateColumns: `repeat(${lossRenderBars.length}, minmax(0, 1fr))` }"
+              role="button" tabindex="0"
+              class="group/panel relative col-span-3 flex h-6 cursor-pointer flex-col gap-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              :title="latencyPanelTooltip" :aria-label="`${props.node.name} 延迟`" @click.stop="openPingDialog"
+              @keydown.enter.stop.prevent="openPingDialog" @keydown.space.stop.prevent="openPingDialog"
             >
-              <DataTooltip v-for="bar in lossRenderBars" :key="bar.key" placement="top" :content="bar.tooltip" class="h-full w-full">
-                <span
-                  class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-160 group-hover/panel:opacity-60 group-hover/data-tooltip:!opacity-100"
-                  :class="bar.className"
-                />
-              </DataTooltip>
+              <div class="flex items-center justify-between text-[11px] leading-none relative">
+                <span class="text-muted-foreground">延迟</span>
+                <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+                <span class="font-medium text-foreground/85">{{ latencyDisplay }}</span>
+              </div>
+              <div
+                class="grid h-full items-end gap-[1px] opacity-80"
+                :style="{ gridTemplateColumns: `repeat(${latencyRenderBars.length}, minmax(0, 1fr))` }"
+              >
+                <DataTooltip
+                  v-for="bar in latencyRenderBars" :key="bar.key" placement="top" :content="bar.tooltip"
+                  class="h-full w-full"
+                >
+                  <span
+                    class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-200"
+                    :class="bar.className"
+                  />
+                </DataTooltip>
+              </div>
+            </div>
+            <!-- 丢包 -->
+            <div
+              role="button" tabindex="0"
+              class="group/panel relative col-span-3 flex h-6 cursor-pointer flex-col gap-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              :title="lossPanelTooltip" :aria-label="`${props.node.name} 丢包`" @click.stop="openPingDialog"
+              @keydown.enter.stop.prevent="openPingDialog" @keydown.space.stop.prevent="openPingDialog"
+            >
+              <div class="flex items-center justify-between text-[11px] leading-none">
+                <span class="text-muted-foreground">丢包</span>
+                <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+                <span class="font-medium text-foreground/85">{{ lossDisplay }}</span>
+              </div>
+              <div
+                class="grid h-full items-end gap-[1px] opacity-80 group-hover/panel:opacity-100"
+                :style="{ gridTemplateColumns: `repeat(${lossRenderBars.length}, minmax(0, 1fr))` }"
+              >
+                <DataTooltip
+                  v-for="bar in lossRenderBars" :key="bar.key" placement="top" :content="bar.tooltip"
+                  class="h-full w-full"
+                >
+                  <span
+                    class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-200"
+                    :class="bar.className"
+                  />
+                </DataTooltip>
+              </div>
             </div>
           </div>
         </div>

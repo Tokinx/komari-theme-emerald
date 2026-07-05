@@ -192,7 +192,7 @@ onMounted(async () => {
         hoverable
         class="group h-full border-none rounded-md transition-all"
         :class="[
-          pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
+          pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
           showVisualPanel ? 'col-span-4 row-span-1 col-start-1 row-start-1' : 'col-span-1 row-start-1 col-start-1 min-h-18 md:min-h-24 md:row-start-1 md:col-start-1',
         ]"
         content-class="h-full !p-3"
@@ -224,7 +224,7 @@ onMounted(async () => {
         hoverable
         class="group h-full border-none rounded-md transition-all"
         :class="[
-          pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
+          pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
           showVisualPanel ? 'col-span-4 row-span-1 col-start-1 row-start-2' : 'col-span-1 row-start-2 col-start-1 min-h-18 md:min-h-24 md:row-start-1 md:col-start-2',
         ]"
         content-class="h-full !p-3"
@@ -258,7 +258,7 @@ onMounted(async () => {
         <CardX
           hoverable
           class="group h-full border-none rounded-md transition-all"
-          :class="pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs')"
+          :class="pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs')"
           content-class="h-full !p-3" @click="openFinanceCard = !openFinanceCard"
         >
           <div class="flex h-full flex-col justify-between gap-1">
@@ -286,7 +286,7 @@ onMounted(async () => {
         </CardX>
         <CardX
           hoverable
-          class="absolute top-0 left-1/2 z-20 h-42 w-[260%] max-w-88 -translate-x-[50%] -translate-y-[25%] rounded-md border-none shadow-xl shadow-emerald-600/10 transition-all"
+          class="absolute top-0 left-1/2 z-20 h-42 w-[260%] max-w-88 -translate-x-[50%] -translate-y-[25%] rounded-md border-none shadow-[0_0_20px,0_0_0_1px] shadow-emerald-600/10 transition-all"
           :class="[
             pickSurfaceClass('bg-background', 'bg-background/50 backdrop-blur-lg'),
             openFinanceCard ? 'opacity-100 scale-100  -translate-y-[5%]' : 'opacity-0 pointer-events-none scale-50',
@@ -301,7 +301,7 @@ onMounted(async () => {
                 </div>
                 <Transition v-bind="metricSwitchTransitionProps">
                   <div
-                    :key="`remaining-value-${summaryTransitionKey}-${exchangeRateBaseCurrency}-${openFinanceCard}`" class="flex min-w-0 items-baseline truncate"
+                    :key="`remaining-value-${summaryTransitionKey}-${exchangeRateBaseCurrency}`" class="flex min-w-0 items-baseline truncate"
                     :style="getMetricSwitchStyle(index)"
                   >
                     <span class="shrink-0 text-xs mr-0.5 font-semibold leading-none text-muted-foreground">
@@ -337,7 +337,7 @@ onMounted(async () => {
                   class="text-[11px] flex items-center "
                 >
                   <Transition v-bind="metricSwitchTransitionProps">
-                    <div :key="`remaining-value-${exchangeRateBaseCurrency}-${openFinanceCard}`" class="flex-1 flex justify-between" :style="getMetricSwitchStyle(index)">
+                    <div :key="`remaining-value-${exchangeRateBaseCurrency}`" class="flex-1 flex justify-between" :style="getMetricSwitchStyle(index)">
                       <span class="text-muted-foreground">
                         {{ row.currency }}
                       </span>
@@ -356,7 +356,7 @@ onMounted(async () => {
         hoverable
         class="group h-full border-none rounded-md transition-all"
         :class="[
-          pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
+          pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
           showVisualPanel ? 'col-span-4 row-span-1 col-start-5 row-start-2' : 'col-span-1 row-start-2 col-start-2 min-h-18 md:min-h-24 md:row-start-1 md:col-start-4',
         ]"
         content-class="h-full !p-3"
@@ -395,7 +395,7 @@ onMounted(async () => {
         hoverable
         class="group h-full border-none rounded-md transition-all"
         :class="[
-          pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
+          pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
           showVisualPanel ? 'col-span-4 row-span-1 col-start-9 row-start-1' : 'col-span-1 row-start-1 col-start-3 min-h-18 md:min-h-24 md:row-start-1 md:col-start-5',
         ]"
         content-class="h-full !p-3"
@@ -424,7 +424,7 @@ onMounted(async () => {
         hoverable
         class="group h-full border-none rounded-md transition-all"
         :class="[
-          pickSurfaceClass('bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
+          pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/50 hover:bg-background backdrop-blur-xs'),
           showVisualPanel ? 'col-span-4 row-span-1 col-start-9 row-start-2' : 'col-span-1 row-start-2 col-start-3 min-h-18 md:min-h-24 md:row-start-1 md:col-start-6',
         ]"
         content-class="h-full !p-3"

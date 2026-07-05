@@ -259,9 +259,7 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
           <DialogTitle class="truncate">
             {{ selectedPingNode.name }} 延迟 / 丢包
           </DialogTitle>
-          <div
-            class="absolute inset-0 mx-0 max-w-none overflow-hidden bg-slate-50 dark:bg-slate-900/50 -z-99"
-          >
+          <div class="absolute inset-0 mx-0 max-w-none overflow-hidden bg-slate-50 dark:bg-slate-900/50 -z-9 zoom-90">
             <div class="absolute top-0 left-1/2 -ml-152 h-100 w-325 dark:mask-[linear-gradient(white,transparent)]">
               <div
                 class="absolute inset-0 bg-linear-to-r from-emerald-500 to-lime-300 mask-[radial-gradient(farthest-side_at_top,white,transparent)] opacity-40 dark:from-emerald-500/30 dark:to-lime-300/30 dark:opacity-100"

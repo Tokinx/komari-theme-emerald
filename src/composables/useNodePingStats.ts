@@ -42,7 +42,7 @@ interface SharedPingRecordsEntry {
   lastFetchedAt: number
 }
 
-export const NODE_PING_BAR_COUNT = 20
+export const NODE_PING_BAR_COUNT = 10
 const CACHE_VERSION = 5
 const CACHE_KEY_PREFIX = 'komari-theme-emerald:node-ping-stats'
 const FULL_LOSS_EPSILON = 1e-6

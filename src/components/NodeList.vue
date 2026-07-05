@@ -202,20 +202,19 @@ function formatOfflineTime(node: NodeData): string {
 function getPriceTags(node: NodeData): PriceTagItem[] {
   const tags: PriceTagItem[] = []
   const lang = appStore.lang
-  if (node.price !== 0) {
-    const days = getDaysUntilExpired(node.expired_at)
-    const status = getExpireStatus(node.expired_at)
-    const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
+  const days = getDaysUntilExpired(node.expired_at)
+  const status = getExpireStatus(node.expired_at)
+  const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
+  if (node.price !== 0)
     tags.push({ text: priceText })
-    if (status === 'expired')
-      tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
-    else if (status === 'long_term')
-      tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
-    else if (lang === 'zh-CN')
-      tags.push({ text: `剩余 ${days} 天`, prefix: '剩余 ', highlightValue: String(days), suffix: ' 天' })
-    else
-      tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
-  }
+  if (status === 'expired')
+    tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
+  else if (status === 'long_term')
+    tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
+  else if (lang === 'zh-CN')
+    tags.push({ text: `余 ${days} 天`, prefix: '余 ', highlightValue: String(days), suffix: ' 天' })
+  else
+    tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
   return tags
 }
 
@@ -260,7 +259,7 @@ function getCustomTags(node: NodeData): Array<string> {
         <div
           v-for="(node, index) in sortedNodes"
           :key="getRowTransitionKey(node)"
-          class="relative flex h-16 cursor-pointer flex-col justify-center rounded-lg px-2 shadow-[0_0_0_2px] shadow-transparent transition-all bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_0_2px]"
+          class="relative flex h-16 cursor-pointer flex-col justify-center rounded-lg px-2 shadow-[0_0_4px,0_0_0_1px] shadow-transparent transition-all bg-background/60 hover:bg-background hover:!shadow-emerald-600/10"
           :class="[pickSurfaceClass('', 'backdrop-blur-sm'), !node.online && '!shadow-red-600/10']"
           :style="getRowTransitionStyle(index)"
           @click="handleClick(node)"
@@ -269,10 +268,10 @@ function getCustomTags(node: NodeData): Array<string> {
             <template v-for="col in columns" :key="col.key">
               <!-- 在线状态指示器 -->
               <div v-if="col.key === 'status'" class="flex justify-center">
-                <div class="size-2 rounded-full relative" :class="[node.online ? 'bg-green-600' : 'bg-red-600']">
+                <div class="size-2 rounded-full relative" :class="[node.online ? 'bg-emerald-600' : 'bg-red-600']">
                   <div
                     class="animate-ping absolute inset-0 rounded-full opacity-50"
-                    :class="[node.online ? 'bg-green-600' : 'bg-red-600']"
+                    :class="[node.online ? 'bg-emerald-600' : 'bg-red-600']"
                   />
                 </div>
               </div>
@@ -356,7 +355,7 @@ function getCustomTags(node: NodeData): Array<string> {
 
               <!-- 内存 -->
               <div v-else-if="col.key === 'mem'" class="group">
-                <DataTooltip placement="top" class="block" content-class="px-1.5 py-1 text-[10px]">
+                <DataTooltip placement="top" class="block" :content-class="[!node.swap && '!hidden']">
                   <div class="space-y-1">
                     <div class="text-[10px] text-muted-foreground truncate">
                       <span class="inline group-hover:hidden">
@@ -373,11 +372,7 @@ function getCustomTags(node: NodeData): Array<string> {
                   </div>
                   <template #content>
                     <div class="flex items-center justify-between gap-3 whitespace-nowrap">
-                      <span class="text-background/70">USED</span>
-                      <span>{{ formatBytes(node.ram ?? 0) }}</span>
-                    </div>
-                    <div v-if="node.swap" class="flex items-center justify-between gap-3 whitespace-nowrap">
-                      <span class="text-background/70">SWAP</span>
+                      <span class="text-background/70">Swap</span>
                       <span>{{ formatBytes(node.swap ?? 0) }}</span>
                     </div>
                   </template>
@@ -438,7 +433,7 @@ function getCustomTags(node: NodeData): Array<string> {
               <!-- 速率 -->
               <div v-else-if="col.key === 'rate'">
                 <div class="text-[10px] flex flex-col ">
-                  <span class="text-green-600 flex flex-row gap-1 items-center">
+                  <span class="text-emerald-600 flex flex-row gap-1 items-center">
                     <Icon icon="tabler:chevron-up" width="12" height="12" />
                     {{ formatBytesPerSecond(node.net_out ?? 0) }}
                   </span>
