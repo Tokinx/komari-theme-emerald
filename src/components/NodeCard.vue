@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { ProgressThin } from '@/components/ui/progress-thin'
+import { useBackgroundSurface } from '@/composables/useBackgroundSurface'
 import { useNodePingDisplay } from '@/composables/useNodePingDisplay'
 import { useAppStore } from '@/stores/app'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const appStore = useAppStore()
+const { pickSurfaceClass } = useBackgroundSurface()
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
@@ -128,8 +130,9 @@ function openPingDialog() {
 <template>
   <CardX
     hoverable
-    class="node-card w-full h-full cursor-pointer bg-background/50 border-none shadow-[0_0_0_3px] shadow-transparent hover:bg-background hover:shadow-slate-500/10 backdrop-blur-sm transition-all duration-200 rounded-md"
-    :class="[!props.node.online && '!shadow-red-600/20']" @click="emit('click')"
+    class="node-card h-full w-full cursor-pointer border-none shadow-[0_0_0_3px] shadow-transparent transition-all duration-200 rounded-md bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_20px,0_0_0_1px] hover:-translate-y-0.5 hover:z-1"
+    :class="[pickSurfaceClass('', 'backdrop-blur-sm'), !props.node.online && '!shadow-red-600/20']"
+    @click="emit('click')"
   >
     <template #header>
       <div class="flex gap-2 min-w-0 items-center">

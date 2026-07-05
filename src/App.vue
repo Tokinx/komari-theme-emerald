@@ -15,12 +15,12 @@ const isReady = ref(false)
 const pageTransitionProps = computed(() => appStore.disablePageAnimation
   ? { css: false as const }
   : {
-      enterActiveClass: 'transition-all duration-200 ease-out',
-      enterFromClass: 'opacity-0 translate-y-2',
-      enterToClass: 'opacity-100 translate-y-0',
-      leaveActiveClass: 'transition-all duration-200 ease-in',
-      leaveFromClass: 'opacity-100 translate-y-0',
-      leaveToClass: 'opacity-0 -translate-y-2',
+      enterActiveClass: 'transition-all duration-150 ease-out',
+      enterFromClass: 'opacity-0',
+      enterToClass: 'opacity-100',
+      leaveActiveClass: 'transition-all duration-150 ease-in',
+      leaveFromClass: 'opacity-100',
+      leaveToClass: 'opacity-0',
       mode: 'out-in' as const,
     })
 
@@ -44,13 +44,7 @@ onUnmounted(() => {
 <template>
   <Provider>
     <Background />
-    <Transition
-      enter-active-class="transition-all duration-100 ease-out" enter-from-class="opacity-0 backdrop-blur-0"
-      enter-to-class="opacity-100 backdrop-blur-sm" leave-active-class="transition-all duration-100 ease-in"
-      leave-from-class="opacity-100 backdrop-blur-sm" leave-to-class="opacity-0 backdrop-blur-0"
-    >
-      <LoadingCover v-if="appStore.loading" />
-    </Transition>
+    <LoadingCover v-if="appStore.loading" />
     <Header />
     <main v-if="!appStore.loading" class="flex-1">
       <div class="max-w-[1280px] mx-auto">

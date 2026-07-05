@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Empty } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useBackgroundSurface } from '@/composables/useBackgroundSurface'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { isNodeInGroup, parseNodeGroups } from '@/utils/groupHelper'
@@ -27,6 +28,7 @@ const nodeItemStaggerMs = 35
 const nodeItemStaggerLimit = 12
 
 const appStore = useAppStore()
+const { pickSurfaceClass } = useBackgroundSurface()
 const nodesStore = useNodesStore()
 const router = useRouter()
 
@@ -141,14 +143,17 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
 <template>
   <div class="home-view">
     <div v-if="appStore.connectionError" class="alert px-4">
-      <Alert variant="destructive" class="border-none backdrop-blur-xs bg-red-400/10 rounded-md">
+      <Alert
+        variant="destructive"
+        :class="pickSurfaceClass('border-none bg-red-400/10 rounded-md', 'border-none bg-red-400/10 backdrop-blur-xs rounded-md')"
+      >
         <AlertTitle>RPC 服务错误</AlertTitle>
         <AlertDescription>连接服务器失败，请检查网络设置或刷新页面后再试。</AlertDescription>
       </Alert>
     </div>
 
     <div v-if="appStore.alertEnabled && appStore.alertContent" class="alert px-4">
-      <Alert class="border-none bg-background/60 backdrop-blur-xs rounded-md">
+      <Alert :class="pickSurfaceClass('border-none bg-background rounded-md', 'border-none bg-background/60 backdrop-blur-xs rounded-md')">
         <AlertTitle v-if="appStore.alertTitle">
           {{ appStore.alertTitle }}
         </AlertTitle>
@@ -170,10 +175,10 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
         <Tabs v-model="appStore.nodeSelectedGroup" class="w-full flex-col gap-4">
           <div class="flex gap-2 items-start flex-nowrap">
             <div class="overflow-x-auto rounded-sm md:pointer-events-auto">
-              <TabsList class="w-max h-8 bg-background/50 backdrop-blur-xl rounded-md">
+              <TabsList :class="pickSurfaceClass('w-max h-8 bg-background/60 rounded-md', 'w-max h-8 bg-background/50 backdrop-blur-xl rounded-md')">
                 <TabsTrigger
                   v-for="g in groups" :key="g.name" :value="g.name"
-                  class="h-6.5 flex-none shrink-0 text-xs border-none data-[state=active]:text-green-600 shadow-none rounded-sm"
+                  class="h-6.5 flex-none shrink-0 text-xs border-none data-[state=active]:text-emerald-600 shadow-none rounded-sm"
                 >
                   {{ g.tab }}
                 </TabsTrigger>
@@ -182,16 +187,16 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
             <div class="ml-auto search flex gap-2 items-center pointer-events-auto">
               <Button
                 variant="outline" size="icon" aria-label="卡片视图"
-                class="w-8 h-8 border-none  bg-background/50 backdrop-blur-xs shadow-none hover:bg-background/60 rounded-md"
-                :class="[appStore.nodeViewMode === 'card' ? '!text-green-600 !bg-background' : '']"
+                class="h-8 w-8 border-none shadow-none rounded-md"
+                :class="[pickSurfaceClass('bg-background hover:bg-background/95', 'bg-background/50 hover:bg-background/60 backdrop-blur-xs'), appStore.nodeViewMode === 'card' ? '!text-emerald-600 !bg-background' : '']"
                 @click="appStore.nodeViewMode = 'card'"
               >
                 <Icon icon="tabler:layout-grid" :width="14" :height="14" />
               </Button>
               <Button
                 variant="outline" size="icon" aria-label="列表视图"
-                class="w-8 h-8 border-none bg-background/50 backdrop-blur-xs shadow-none hover:bg-background/60 rounded-md"
-                :class="[appStore.nodeViewMode === 'list' ? '!text-green-600 !bg-background' : '']"
+                class="h-8 w-8 border-none shadow-none rounded-md"
+                :class="[pickSurfaceClass('bg-background hover:bg-background/95', 'bg-background/50 hover:bg-background/60 backdrop-blur-xs'), appStore.nodeViewMode === 'list' ? '!text-emerald-600 !bg-background' : '']"
                 @click="appStore.nodeViewMode = 'list'"
               >
                 <Icon icon="tabler:table" :width="14" :height="14" />
@@ -200,7 +205,8 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
                 <div class="absolute top-0 right-0 ">
                   <Input
                     v-model="searchText" placeholder="搜索节点名称、地区、系统"
-                    class="transition-all placeholder:text-transparent border-none shadow-none w-8 h-8  bg-background/50 backdrop-blur-xs rounded-md hover:!bg-background/60 focus:!w-60 focus:!pl-7.5 focus:placeholder:!text-muted-foreground focus:!bg-background/80 focus:!ring-slate-500/10"
+                    class="h-8 w-8 rounded-md border-none shadow-none transition-all placeholder:text-transparent focus:!w-60 focus:!pl-7.5 focus:placeholder:!text-muted-foreground focus:!ring-emerald-500/10"
+                    :class="pickSurfaceClass('bg-background hover:!bg-background/95 focus:!bg-background', 'bg-background/50 hover:!bg-background/60 focus:!bg-background/80 backdrop-blur-xs')"
                   />
                   <Icon
                     icon="tabler:search" :width="14" :height="14"
@@ -246,13 +252,42 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
     <Dialog v-model:open="pingDialogOpen">
       <DialogContent
         v-if="selectedPingNode"
-        class="max-w-6xl gap-0 overflow-hidden bg-background/60 p-0 shadow-[0_0_2rem_rgba(0,0,0,0.1)]"
-        overlay-class="bg-background/30"
+        class="max-w-6xl gap-0 overflow-hidden border-emerald-600/10 p-0 shadow-[0_0_2rem] shadow-emerald-800/10 transition-all"
+        :class="pickSurfaceClass('bg-background', 'bg-background/60')"
       >
         <DialogHeader class="flex h-13 flex-row items-center px-4">
           <DialogTitle class="truncate">
             {{ selectedPingNode.name }} 延迟 / 丢包
           </DialogTitle>
+          <div
+            class="absolute inset-0 mx-0 max-w-none overflow-hidden bg-slate-50 dark:bg-slate-900/50 -z-99"
+          >
+            <div class="absolute top-0 left-1/2 -ml-152 h-100 w-325 dark:mask-[linear-gradient(white,transparent)]">
+              <div
+                class="absolute inset-0 bg-linear-to-r from-emerald-500 to-lime-300 mask-[radial-gradient(farthest-side_at_top,white,transparent)] opacity-40 dark:from-emerald-500/30 dark:to-lime-300/30 dark:opacity-100"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="absolute inset-x-0 inset-y-[-50%] h-[200%] w-full skew-y-[-18deg] fill-black/40 stroke-black/50 mix-blend-overlay dark:fill-white/2.5 dark:stroke-white/5"
+                >
+                  <defs>
+                    <pattern id="_S_1_" width="72" height="56" patternUnits="userSpaceOnUse" x="-12" y="4">
+                      <path d="M.5 56V.5H72" fill="none" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" stroke-width="0" fill="url(#_S_1_)" /><svg
+                    x="-12" y="4"
+                    class="overflow-visible"
+                  >
+                    <rect stroke-width="0" width="73" height="57" x="288" y="168" />
+                    <rect stroke-width="0" width="73" height="57" x="144" y="56" />
+                    <rect stroke-width="0" width="73" height="57" x="504" y="168" />
+                    <rect stroke-width="0" width="73" height="57" x="720" y="336" />
+                  </svg>
+                </svg>
+              </div>
+            </div>
+          </div>
         </DialogHeader>
         <div class="max-h-[calc(90vh-4rem)] overflow-y-auto p-4 pt-0">
           <PingChart :uuid="selectedPingNode.uuid" />

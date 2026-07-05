@@ -7,6 +7,7 @@ import TrafficProgress from '@/components/TrafficProgress.vue'
 import { Badge } from '@/components/ui/badge'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { ProgressThin } from '@/components/ui/progress-thin'
+import { useBackgroundSurface } from '@/composables/useBackgroundSurface'
 import { useAppStore } from '@/stores/app'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
@@ -41,6 +42,7 @@ const rowStaggerMs = 35
 const rowStaggerLimit = 12
 
 const appStore = useAppStore()
+const { pickSurfaceClass } = useBackgroundSurface()
 
 const columns: ColumnConfig[] = [
   { key: 'status', label: '状态', width: '40px', sortable: false },
@@ -232,7 +234,11 @@ function getCustomTags(node: NodeData): Array<string> {
   <div class="overflow-x-auto overflow-y-hidden min-w-0 p-1 -m-1">
     <div class="min-w-fit w-full flex flex-col gap-1">
       <!-- 表头 -->
-      <div class="grid p-2 bg-background/60 rounded-lg backdrop-blur-sm gap-2" :style="gridStyle">
+      <div
+        class="grid gap-2 rounded-lg p-2"
+        :class="pickSurfaceClass('bg-background/60 hover:bg-background', 'bg-background/60 backdrop-blur-sm')"
+        :style="gridStyle"
+      >
         <div
           v-for="col in columns" :key="col.key"
           :class="[col.sortable ? 'cursor-pointer' : '', ['status', 'os'].includes(col.key) ? 'text-center' : 'text-left']"
@@ -254,8 +260,8 @@ function getCustomTags(node: NodeData): Array<string> {
         <div
           v-for="(node, index) in sortedNodes"
           :key="getRowTransitionKey(node)"
-          class="flex flex-col relative h-16 justify-center px-2 cursor-pointer bg-background/30 rounded-lg backdrop-blur-sm shadow-[0_0_0_2px] shadow-transparent hover:shadow-slate-500/10 hover:bg-background transition-all"
-          :class="[!node.online && '!shadow-red-600/10']"
+          class="relative flex h-16 cursor-pointer flex-col justify-center rounded-lg px-2 shadow-[0_0_0_2px] shadow-transparent transition-all bg-background/60 hover:bg-background hover:shadow-emerald-600/10 hover:shadow-[0_0_0_2px]"
+          :class="[pickSurfaceClass('', 'backdrop-blur-sm'), !node.online && '!shadow-red-600/10']"
           :style="getRowTransitionStyle(index)"
           @click="handleClick(node)"
         >
