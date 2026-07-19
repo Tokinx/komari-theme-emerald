@@ -1,7 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 import { NODE_PING_BAR_COUNT, useNodePingStats } from '@/composables/useNodePingStats'
-import { useAppStore } from '@/stores/app'
 import { formatDateTime } from '@/utils/helper'
 
 export type NodePingMetric = 'latency' | 'loss'
@@ -51,15 +50,11 @@ export function useNodePingDisplay(
   uuid: MaybeRefOrGetter<string>,
   options: UseNodePingDisplayOptions = {},
 ) {
-  const appStore = useAppStore()
-
-  const pingStatsEnabled = computed(() => {
-    if (options.enabled !== undefined && !toValue(options.enabled))
-      return false
-    if (appStore.publicSettings?.record_enabled === false)
-      return false
-    return appStore.publicSettings?.ping_record_preserve_time !== 0
-  })
+  // Komari 1.2.6+ uses metric-store retention and keeps the legacy public
+  // record fields for compatibility only. They can report records as disabled
+  // even when ping metrics are available, so only an explicit caller option
+  // should prevent the query.
+  const pingStatsEnabled = computed(() => options.enabled === undefined || toValue(options.enabled))
 
   const pingRecordsQueryHours = computed(() => RECENT_PING_RECORDS_QUERY_HOURS)
 
