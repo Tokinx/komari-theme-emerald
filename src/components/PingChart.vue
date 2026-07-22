@@ -697,6 +697,11 @@ const pingChartOption = computed(() => {
       axisLabel: { fontSize: 11, color: chartThemeColors.value.textSecondary, formatter: '{value}' },
       axisLine: { show: false },
       axisTick: { show: false },
+      axisPointer: {
+        lineStyle: { opacity: 0 },
+        crossStyle: { opacity: 0 },
+        label: { show: false },
+      },
       splitLine: {
         lineStyle: {
           color: chartThemeColors.value.splitLineColor,
