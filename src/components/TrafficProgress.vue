@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatBytes } from '@/utils/helper'
+import { calculateTrafficUsed } from '@/utils/nodeHelpers'
 
 export interface TrafficProgressProps {
   upload: number
@@ -24,17 +25,7 @@ const props = withDefaults(defineProps<TrafficProgressProps>(), {
 
 const showProgress = computed(() => props.trafficLimit > 0)
 
-const usedTraffic = computed(() => {
-  const { upload, download, trafficLimitType } = props
-  switch (trafficLimitType) {
-    case 'up': return upload
-    case 'down': return download
-    case 'min': return Math.min(upload, download)
-    case 'max': return Math.max(upload, download)
-    case 'sum': return upload + download
-    default: return upload + download
-  }
-})
+const usedTraffic = computed(() => calculateTrafficUsed(props.upload, props.download, props.trafficLimitType))
 
 const totalPercentage = computed(() => {
   if (props.trafficLimit <= 0)

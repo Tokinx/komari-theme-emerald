@@ -1627,6 +1627,15 @@ export function getRegionCode(regionEmoji: string): string {
 }
 
 /**
+ * 获取地区国旗图片路径
+ * @param region 地区emoji
+ * @returns 国旗图片路径
+ */
+export function getFlagSrc(region: string): string {
+  return `/assets/flags/${getRegionCode(region)}.svg`
+}
+
+/**
  * 根据地区代码获取emoji
  * @param code 地区代码（如：HK, CN, US）
  * @returns 地区emoji

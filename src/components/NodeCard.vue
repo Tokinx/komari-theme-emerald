@@ -7,12 +7,13 @@ import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { ProgressThin } from '@/components/ui/progress-thin'
 import { useBackgroundSurface } from '@/composables/useBackgroundSurface'
+import { useNodeFormatters } from '@/composables/useNodeFormatters'
 import { useNodePingDisplay } from '@/composables/useNodePingDisplay'
 import { useAppStore } from '@/stores/app'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
+import { formatDateTime, getStatus } from '@/utils/helper'
+import { getCustomTags, getDiskPercentage, getMemPercentage, getPriceTags, getRemainingTimeTagClass, getTrafficUsed, getTrafficUsedPercentage, hasRegion, showTrafficProgress } from '@/utils/nodeHelpers'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
-import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
-import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, getExpireTextClass, parseTags } from '@/utils/tagHelper'
+import { getFlagSrc, getRegionDisplayName } from '@/utils/regionHelper'
 
 const props = defineProps<{ node: NodeData }>()
 
@@ -23,17 +24,15 @@ const emit = defineEmits<{
 
 const appStore = useAppStore()
 const { pickSurfaceClass } = useBackgroundSurface()
+const { formatBytes, formatBytesPerSecond, formatUptime } = useNodeFormatters()
 
-const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
-const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
-const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, 'hour')
 const offlineTime = computed(() => formatDateTime(props.node.time))
 const expiredDate = computed(() => formatDateTime(props.node.expired_at, 'YYYY-MM-DD'))
 
 const cpuStatus = computed(() => getStatus(props.node.cpu ?? 0))
-const memPercentage = computed(() => (props.node.ram ?? 0) / (props.node.mem_total || 1) * 100)
+const memPercentage = computed(() => getMemPercentage(props.node))
 const memStatus = computed(() => getStatus(memPercentage.value))
-const diskPercentage = computed(() => (props.node.disk ?? 0) / (props.node.disk_total || 1) * 100)
+const diskPercentage = computed(() => getDiskPercentage(props.node))
 const diskStatus = computed(() => getStatus(diskPercentage.value))
 
 const {
@@ -45,82 +44,11 @@ const {
   lossPanelTooltip,
 } = useNodePingDisplay(() => props.node.uuid)
 
-function showTrafficProgress(node: NodeData): boolean {
-  return node.traffic_limit > 0
-}
-
-const trafficUsedPercentage = computed(() => {
-  if (props.node.traffic_limit <= 0)
-    return 0
-  const { net_total_up = 0, net_total_down = 0, traffic_limit_type } = props.node
-  let used = 0
-  switch (traffic_limit_type) {
-    case 'up': used = net_total_up
-      break
-    case 'down': used = net_total_down
-      break
-    case 'min': used = Math.min(net_total_up, net_total_down)
-      break
-    case 'max': used = Math.max(net_total_up, net_total_down)
-      break
-    case 'sum':
-    default:
-      used = net_total_up + net_total_down
-      break
-  }
-  return Math.min((used / props.node.traffic_limit) * 100, 100)
-})
-
-const trafficUsed = computed(() => {
-  const { net_total_up = 0, net_total_down = 0, traffic_limit_type } = props.node
-  switch (traffic_limit_type) {
-    case 'up': return net_total_up
-    case 'down': return net_total_down
-    case 'min': return Math.min(net_total_up, net_total_down)
-    case 'max': return Math.max(net_total_up, net_total_down)
-    case 'sum':
-    default: return net_total_up + net_total_down
-  }
-})
-
-interface PriceTagItem {
-  text: string
-  highlightValue?: string
-  prefix?: string
-  suffix?: string
-}
-
-const priceTags = computed<PriceTagItem[]>(() => {
-  const tags: PriceTagItem[] = []
-  const lang = appStore.lang
-  const node = props.node
-  const days = getDaysUntilExpired(node.expired_at)
-  const status = getExpireStatus(node.expired_at)
-  const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
-  if (node.price !== 0)
-    tags.push({ text: priceText })
-  if (status === 'expired')
-    tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
-  else if (status === 'long_term')
-    tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
-  else if (lang === 'zh-CN')
-    tags.push({ text: `余 ${days} 天`, prefix: '余 ', highlightValue: String(days), suffix: ' 天' })
-  else
-    tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
-  return tags
-})
-
-const remainingTimeTagClass = computed(() => {
-  if (props.node.price === 0)
-    return ''
-  return getExpireTextClass(props.node.expired_at)
-})
-
-const customTags = computed(() => parseTags(props.node.tags).map(t => t.text))
-
-function hasRegion(region: string | null | undefined): boolean {
-  return Boolean(region?.trim())
-}
+const trafficUsedPercentage = computed(() => getTrafficUsedPercentage(props.node))
+const trafficUsed = computed(() => getTrafficUsed(props.node))
+const priceTags = computed(() => getPriceTags(props.node, appStore.lang))
+const remainingTimeTagClass = computed(() => getRemainingTimeTagClass(props.node))
+const customTags = computed(() => getCustomTags(props.node))
 
 function openPingDialog() {
   emit('pingClick', props.node)
@@ -152,7 +80,7 @@ function openPingDialog() {
       <div class="flex gap-2 items-center">
         <img :src="getOSImage(props.node.os)" :alt="getOSName(props.node.os)" class="size-4">
         <img
-          v-if="hasRegion(props.node.region)" :src="`/assets/flags/${getRegionCode(props.node.region)}.svg`"
+          v-if="hasRegion(props.node.region)" :src="getFlagSrc(props.node.region)"
           :alt="getRegionDisplayName(props.node.region)" class="size-5 shrink-0"
         >
       </div>
@@ -224,7 +152,7 @@ function openPingDialog() {
             <DataTooltip placement="top" class="block">
               <div class="text-[11px] text-muted-foreground truncate">
                 {{ formatBytes(trafficUsed) }} /
-                <template v-if="showTrafficProgress(node)">
+                <template v-if="showTrafficProgress(props.node)">
                   {{ formatBytes(props.node.traffic_limit) }}
                 </template>
                 <template v-else>
