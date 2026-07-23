@@ -314,7 +314,7 @@ onMounted(async () => {
                 </Transition>
               </div>
             </div>
-            <div class="flex-1" />
+            <div class="flex-1 my-1.5" />
             <div class="shrink-0 flex flex-col flex-1">
               <div class="flex mb-1 items-center justify-between gap-2">
                 <div class="flex items-center gap-1 text-xs font-medium tracking-wider text-muted-foreground">
@@ -330,8 +330,7 @@ onMounted(async () => {
                   </option>
                 </select>
               </div>
-              <div class="flex-1" />
-              <div class="grid grid-cols-2 gap-y-1 gap-x-4">
+              <div class="h-15 grid grid-cols-2 gap-y-1 gap-x-4 overflow-auto">
                 <div
                   v-for="(row, index) in exchangeRateRows" :key="row.currency"
                   class="text-[11px] flex items-center "
