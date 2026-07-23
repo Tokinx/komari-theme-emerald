@@ -261,12 +261,12 @@ function openPingDialog() {
                   <span class="font-medium text-foreground/85">{{ latencyDisplay }}</span>
                 </div>
                 <div
-                  class="grid h-full items-end gap-[1px] opacity-80"
+                  class="grid h-full items-end gap-[1px]"
                   :style="{ gridTemplateColumns: `repeat(${latencyRenderBars.length}, minmax(0, 1fr))` }"
                 >
                   <DataTooltip
                     v-for="bar in latencyRenderBars" :key="bar.key" placement="top" :content="bar.tooltip"
-                    class="h-full w-full"
+                    class="h-full w-full" content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
                   >
                     <span
                       class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-200"
@@ -288,12 +288,12 @@ function openPingDialog() {
                   <span class="font-medium text-foreground/85">{{ lossDisplay }}</span>
                 </div>
                 <div
-                  class="grid h-full items-end gap-[1px] opacity-80 group-hover/panel:opacity-100"
+                  class="grid h-full items-end gap-[1px]"
                   :style="{ gridTemplateColumns: `repeat(${lossRenderBars.length}, minmax(0, 1fr))` }"
                 >
                   <DataTooltip
                     v-for="bar in lossRenderBars" :key="bar.key" placement="top" :content="bar.tooltip"
-                    class="h-full w-full"
+                    class="h-full w-full" content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
                   >
                     <span
                       class="block h-full w-full rounded-[1px] transition-transform duration-150 group-hover/data-tooltip:scale-y-200"
