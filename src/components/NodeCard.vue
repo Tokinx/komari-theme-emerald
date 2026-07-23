@@ -42,6 +42,7 @@ const {
   lossDisplay,
   latencyPanelTooltip,
   lossPanelTooltip,
+  topPingNetworks,
 } = useNodePingDisplay(() => props.node.uuid)
 
 const trafficUsedPercentage = computed(() => getTrafficUsedPercentage(props.node))
@@ -233,6 +234,26 @@ function openPingDialog() {
                 </span>
               </DataTooltip>
             </div>
+            <div class="flex items-center justify-between">
+              <span class="truncate">
+                三网
+              </span>
+              <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
+              <div v-if="topPingNetworks.length > 0" class="flex flex-row">
+                <DataTooltip
+                  v-for="(net, index) in topPingNetworks" :key="net.name" placement="top"
+                  :content="`${net.name}\n${net.latency}`" content-class="whitespace-pre-wrap w-max px-1.5 text-[11px]"
+                >
+                  <div class="truncate">
+                    <span v-if="index" class="mx-1">·</span>
+                    <span :class="net.toneClass">{{ net.latency }}</span>
+                  </div>
+                </DataTooltip>
+              </div>
+              <div v-else class="truncate">
+                N/A
+              </div>
+            </div>
             <div class="grid grid-cols-6 gap-x-3">
               <!-- 延迟 -->
               <div
@@ -307,6 +328,5 @@ function openPingDialog() {
 <style scoped>
 .node-card {
   position: relative;
-  overflow: hidden;
 }
 </style>

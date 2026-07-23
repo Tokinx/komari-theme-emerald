@@ -22,6 +22,18 @@ interface UseNodePingDisplayOptions {
   emptyPanelTooltipText?: Partial<Record<NodePingMetric, string>>
 }
 
+export function getPingToneClass(value: number): string {
+  if (!value)
+    return 'text-muted-foreground'
+  if (value <= 100)
+    return 'text-emerald-600 dark:text-emerald-400'
+  if (value <= 180)
+    return 'text-lime-600 dark:text-lime-400'
+  if (value <= 260)
+    return 'text-amber-600 dark:text-amber-400'
+  return 'text-rose-600 dark:text-rose-400'
+}
+
 function getLatencyToneClass(latency: number): string {
   if (latency <= 60)
     return 'bg-emerald-600/90'
@@ -148,6 +160,14 @@ export function useNodePingDisplay(
     return `平均丢包 ${pingStats.avgLoss.value.toFixed(1)}%${volatility}`
   })
 
+  const topPingNetworks = computed(() => {
+    return pingStats.perTaskStats.value.slice(0, 3).map(p => ({
+      name: p.name,
+      latency: p.avgLatency >= 0 ? `${Math.round(p.avgLatency)}ms` : '--',
+      toneClass: p.avgLatency >= 0 ? getPingToneClass(p.avgLatency) : 'text-rose-500',
+    }))
+  })
+
   return {
     pingStats,
     pingStatsEnabled,
@@ -158,5 +178,7 @@ export function useNodePingDisplay(
     lossDisplay,
     latencyPanelTooltip,
     lossPanelTooltip,
+    perTaskStats: pingStats.perTaskStats,
+    topPingNetworks,
   }
 }

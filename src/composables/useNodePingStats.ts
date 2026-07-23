@@ -15,6 +15,7 @@ export interface NodePingStatsState {
   avgVolatility: number
   history: NodePingHistoryPoint[]
   hasData: boolean
+  perTaskStats: NodePingPerTaskStat[]
 }
 
 interface PingRecord {
@@ -26,10 +27,17 @@ interface PingRecord {
 
 interface SharedPingRecordsResponse {
   records?: PingRecord[]
+  tasks?: PingTaskInfo[]
+}
+
+interface PingTaskInfo {
+  id: number
+  name: string
 }
 
 interface SharedPingRecordsState {
   recordsByClient: Map<string, PingRecord[]>
+  tasks: PingTaskInfo[]
 }
 
 interface SharedPingRecordsEntry {
@@ -42,8 +50,15 @@ interface SharedPingRecordsEntry {
   lastFetchedAt: number
 }
 
+export interface NodePingPerTaskStat {
+  taskId: number
+  name: string
+  avgLatency: number
+  loss: number
+}
+
 export const NODE_PING_BAR_COUNT = 10
-const CACHE_VERSION = 5
+const CACHE_VERSION = 6
 const CACHE_KEY_PREFIX = 'komari-theme-emerald:node-ping-stats'
 const FULL_LOSS_EPSILON = 1e-6
 const PING_RECORD_REFRESH_INTERVAL_MS = 60_000
@@ -61,6 +76,7 @@ function createEmptyStats(): NodePingStatsState {
     avgVolatility: 0,
     history: [],
     hasData: false,
+    perTaskStats: [],
   }
 }
 
@@ -127,6 +143,7 @@ function isValidStatsState(value: unknown): value is NodePingStatsState {
     && typeof state.hasData === 'boolean'
     && Array.isArray(state.history)
     && state.history.every(isValidHistoryPoint)
+    && Array.isArray(state.perTaskStats)
 }
 
 function readStatsCache(uuid: string, hours: number): NodePingStatsState | null {
@@ -228,6 +245,7 @@ async function loadSharedPingRecords(entry: SharedPingRecordsEntry, hours: numbe
 
       entry.data.value = {
         recordsByClient: buildRecordsByClient(result?.records ?? []),
+        tasks: result?.tasks ?? [],
       }
       entry.lastFetchedAt = Date.now()
     }
@@ -337,7 +355,7 @@ function getPercentile(values: number[], percentile: number): number | null {
   return lowerValue + (upperValue - lowerValue) * (position - lowerIndex)
 }
 
-function buildStats(records: PingRecord[]): NodePingStatsState {
+function buildStats(records: PingRecord[], tasks: PingTaskInfo[]): NodePingStatsState {
   const includedTaskIds = getIncludedTaskIds(records)
 
   if (!includedTaskIds.size)
@@ -389,12 +407,25 @@ function buildStats(records: PingRecord[]): NodePingStatsState {
   const avgVolatility = average(volatilityValues)
   const hasData = history.length > 0 || latencyValues.length > 0 || taskLossValues.length > 0
 
+  const taskNameMap = new Map(tasks.map(t => [t.id, t.name]))
+  const perTaskStats: NodePingPerTaskStat[] = Array.from(taskRecords.entries(), ([taskId, taskRecs]) => {
+    const validValues = taskRecs.map(r => r.value).filter(v => v >= 0)
+    const avgLatency = validValues.length ? average(validValues) : -1
+    const loss = taskRecs.length
+      ? (taskRecs.length - validValues.length) / taskRecs.length * 100
+      : 100
+    const name = taskNameMap.get(taskId) ?? `Ping ${taskId}`
+    return { taskId, name, avgLatency, loss }
+  })
+    .sort((a, b) => a.taskId - b.taskId)
+
   return {
     avgLatency,
     avgLoss,
     avgVolatility,
     history,
     hasData,
+    perTaskStats,
   }
 }
 
@@ -450,7 +481,7 @@ export function useNodePingStats(
       return readStatsCache(nodeUuid, hours) ?? createEmptyStats()
 
     const records = state.recordsByClient.get(nodeUuid) ?? []
-    return records.length ? buildStats(records) : createEmptyStats()
+    return records.length ? buildStats(records, state.tasks) : createEmptyStats()
   })
 
   // 副作用：按需触发首次共享加载并维护 loading/error，不再命令式写入 stats。
@@ -500,6 +531,8 @@ export function useNodePingStats(
     { immediate: true },
   )
 
+  const perTaskStats = computed<NodePingPerTaskStat[]>(() => stats.value.perTaskStats)
+
   // 共享记录会定时刷新，节流回写 localStorage，避免多节点同时重算时密集写盘。
   const persistStats = useThrottleFn(
     (nodeUuid: string, hours: number, value: NodePingStatsState) => {
@@ -527,5 +560,6 @@ export function useNodePingStats(
     avgLoss: computed(() => stats.value.avgLoss),
     avgVolatility: computed(() => stats.value.avgVolatility),
     hasData: computed(() => stats.value.hasData),
+    perTaskStats,
   }
 }
