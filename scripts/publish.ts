@@ -64,18 +64,14 @@ async function resolveVersion(): Promise<string> {
 
   try {
     const answer = (await rl.question(
-      `No version provided. Use ${nextVersion} (${currentVersion} -> ${nextVersion})? Enter y to confirm, or enter another version: `,
+      `Use ${nextVersion} (${currentVersion} -> ${nextVersion})? \nPress Enter to confirm, or enter another version: `,
     )).trim()
 
-    if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
+    if (!answer) {
       return nextVersion
     }
 
-    if (answer) {
-      return answer
-    }
-
-    throw new Error('No version provided')
+    return answer
   }
   finally {
     rl.close()
