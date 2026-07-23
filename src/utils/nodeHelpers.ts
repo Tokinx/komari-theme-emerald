@@ -4,9 +4,7 @@ import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, getExpireTe
 
 export interface PriceTagItem {
   text: string
-  highlightValue?: string
-  prefix?: string
-  suffix?: string
+  highlight?: boolean
 }
 
 export function hasRegion(region: string | null | undefined): boolean {
@@ -47,14 +45,12 @@ export function getPriceTags(node: NodeData, lang: 'zh-CN' | 'en-US'): PriceTagI
   const priceText = formatPriceWithCycle(node.price, node.billing_cycle, node.currency, lang)
   if (node.price !== 0)
     tags.push({ text: priceText })
-  if (status === 'expired')
-    tags.push({ text: lang === 'zh-CN' ? '已过期' : 'Expired' })
-  else if (status === 'long_term')
+  if (status === 'long_term')
     tags.push({ text: lang === 'zh-CN' ? '长期' : 'Long-term' })
   else if (lang === 'zh-CN')
-    tags.push({ text: `余 ${days} 天`, prefix: '余 ', highlightValue: String(days), suffix: ' 天' })
+    tags.push({ text: `${days >= 0 ? '+' : ''}${days}天`, highlight: true })
   else
-    tags.push({ text: `${days} days left`, highlightValue: String(days), suffix: ' days left' })
+    tags.push({ text: `${days >= 0 ? '+' : ''}${days}d`, highlight: true })
   return tags
 }
 

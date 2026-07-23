@@ -10,7 +10,7 @@ import { ProgressThin } from '@/components/ui/progress-thin'
 import { useBackgroundSurface } from '@/composables/useBackgroundSurface'
 import { useNodeFormatters } from '@/composables/useNodeFormatters'
 import { useAppStore } from '@/stores/app'
-import { getStatus } from '@/utils/helper'
+import { formatDateTime, getStatus } from '@/utils/helper'
 import { formatOfflineTime, getCustomTags, getPriceTags, getRemainingTimeTagClass, getTrafficUsed, getTrafficUsedPercentage, hasRegion, showTrafficProgress } from '@/utils/nodeHelpers'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getFlagSrc, getRegionDisplayName } from '@/utils/regionHelper'
@@ -42,7 +42,7 @@ const { formatBytes, formatBytesPerSecond, formatUptime } = useNodeFormatters()
 const columns: ColumnConfig[] = [
   { key: 'status', label: '状态', width: '40px', sortable: true },
   { key: 'os', label: '系统', width: '40px', sortable: true },
-  { key: 'name', label: '节点', width: 'minmax(180px, 1fr)', sortable: true },
+  { key: 'name', label: '节点', width: 'minmax(160px, 1fr)', sortable: true },
   { key: 'tags', label: '标签', width: 'minmax(180px, 1fr)', sortable: false },
   { key: 'cpu', label: 'CPU', width: '100px', sortable: true },
   { key: 'mem', label: '内存', width: '100px', sortable: true },
@@ -196,21 +196,29 @@ function getRowTransitionStyle(index: number): Record<string, string> {
                   >
                   <span class="truncate">{{ node.name }}</span>
                 </div>
-                <div
-                  v-if="getPriceTags(node, appStore.lang).length > 0"
-                  class="text-[11px] text-muted-foreground/70 truncate"
-                >
-                  {{ formatUptime(node.uptime ?? 0) }}
-                  <span v-for="(tag, tagIndex) in getPriceTags(node, appStore.lang)" :key="tagIndex" :class="[!!tagIndex && 'ml-1']">
-                    <template v-if="tag.highlightValue">
-                      <span>{{ tag.prefix }}</span>
-                      <span :class="getRemainingTimeTagClass(node)">{{ tag.highlightValue }}</span>
-                      <span>{{ tag.suffix }}</span>
-                    </template>
-                    <template v-else>
-                      {{ tag.text }}
-                    </template>
-                  </span>
+                <div class="flex flex-row text-[11px] text-muted-foreground/70">
+                  <DataTooltip
+                    v-if="node.online" :content="formatUptime(node.uptime ?? 0)" class="shrink-0" placement="right"
+                    content-class="whitespace-pre-wrap left-0 ml-0 w-max"
+                  >
+                    <span>
+                      {{ formatUptime(node.uptime ?? 0, 'day') }}
+                    </span>
+                  </DataTooltip>
+                  <DataTooltip
+                    v-if="getPriceTags(node, appStore.lang).length > 0" placement="left"
+                    :content="formatDateTime(node.expired_at, 'YYYY-MM-DD')"
+                    content-class="whitespace-nowrap right-0 mr-0"
+                  >
+                    <div class="truncate">
+                      <template v-for="(tag, tagIndex) in getPriceTags(node, appStore.lang)" :key="tagIndex">
+                        <span class="mx-1">·</span>
+                        <span :class="tag.highlight ? getRemainingTimeTagClass(node) : ''">
+                          {{ tag.text }}
+                        </span>
+                      </template>
+                    </div>
+                  </DataTooltip>
                 </div>
               </div>
 

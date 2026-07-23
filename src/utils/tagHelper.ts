@@ -210,7 +210,7 @@ export function getExpireTextClass(expiredAt: string | number | undefined): stri
     return 'text-yellow-600 dark:text-yellow-400'
   if (status === 'long_term')
     return 'text-muted-foreground'
-  return 'text-emerald-600 dark:text-emerald-400'
+  return '' // text-emerald-600 dark:text-emerald-400
 }
 
 /**
@@ -360,7 +360,7 @@ export function formatPriceWithCycle(
 ): string {
   const priceText = formatPrice(price, currency, lang)
   const cycleText = getBillingCycleText(billingCycle, lang)
-  return price > 0 ? `${priceText} / ${cycleText}` : priceText
+  return price > 0 ? `${priceText}/${cycleText}` : priceText
 }
 
 /**

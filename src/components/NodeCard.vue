@@ -151,7 +151,7 @@ function openPingDialog() {
             </div>
             <ProgressThin :percentage="trafficUsedPercentage" status="success" :height="4" />
             <DataTooltip placement="top" class="block">
-              <div class="text-[11px] text-muted-foreground truncate">
+              <div class="whitespace-pre-wrap text-[11px] text-muted-foreground truncate">
                 {{ formatBytes(trafficUsed) }} /
                 <template v-if="showTrafficProgress(props.node)">
                   {{ formatBytes(props.node.traffic_limit) }}
@@ -220,14 +220,7 @@ function openPingDialog() {
                 <span class="truncate flex flex-row gap-1">
                   <template v-for="(tag, index) in priceTags" :key="tag">
                     <span class="inline-flex flex-row gap-1 items-center">
-                      <template v-if="tag.highlightValue">
-                        <span>{{ tag.prefix }}</span>
-                        <span :class="remainingTimeTagClass">{{ tag.highlightValue }}</span>
-                        <span>{{ tag.suffix }}</span>
-                      </template>
-                      <template v-else>
-                        {{ tag.text }}
-                      </template>
+                      <span :class="tag.highlight ? remainingTimeTagClass : ''">{{ tag.text }}</span>
                     </span>
                     <span v-if="index < priceTags.length - 1" :key="`${tag}-${index}`">·</span>
                   </template>
