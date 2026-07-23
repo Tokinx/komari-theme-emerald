@@ -132,7 +132,7 @@ const offlineOverlayContentStyle = computed(() => {
 })
 
 function getFlagSrc(region: string): string {
-  return `/images/flags/${getRegionCode(region)}.svg`
+  return `/assets/flags/${getRegionCode(region)}.svg`
 }
 
 function hasRegion(region: string | null | undefined): boolean {

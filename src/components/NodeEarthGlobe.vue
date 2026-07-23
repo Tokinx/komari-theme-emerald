@@ -446,7 +446,7 @@ const offlineServers = computed(() => totalServers.value - onlineServers.value)
         class="absolute -top-3.5 left-0 pointer-events-none rounded backdrop-blur-sm transition-[opacity,filter] duration-500"
       >
         <img
-          :src="`/images/flags/${cluster.code}.svg`" :alt="cluster.code"
+          :src="`/assets/flags/${cluster.code}.svg`" :alt="cluster.code"
           class="size-4 block absolute -bottom-2 -left-2 z-1"
         >
         <div class="relative z-2 bg-background/60 rounded py-0.5 px-2 text-xs zoom-80 items-start justify-center text-nowrap">

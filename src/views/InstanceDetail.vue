@@ -262,7 +262,7 @@ const trafficProgressStyle = computed(() => ({
         </Button>
         <div class="text-lg font-bold flex gap-2 items-center">
           <img
-            :src="`/images/flags/${getRegionCode(data.region)}.svg`" :alt="getRegionDisplayName(data.region)"
+            :src="`/assets/flags/${getRegionCode(data.region)}.svg`" :alt="getRegionDisplayName(data.region)"
             class="size-6"
           >
           <span>{{ data.name }}</span>

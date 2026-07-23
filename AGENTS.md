@@ -112,10 +112,8 @@ Contributor density, useful for triage:
 
 - Do not rename `komari-theme.json`
 - Do not move or rename `docs/preview.png` casually
-- Do not rename files under `public/images/flags/` or `public/images/logo/` without checking code references in `src`
-- Do not change asset path conventions like `/images/flags/<code>.svg` or `/images/logo/...` blindly
 - Do not add generic framework advice here that belongs in `src/AGENTS.md`
-- Do not duplicate workflow specifics from `.github/AGENTS.md` or asset naming specifics from `public/images/AGENTS.md`
+- Do not duplicate workflow specifics from `.github/AGENTS.md`
 
 ## Child guides
 
