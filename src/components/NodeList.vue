@@ -45,15 +45,15 @@ const appStore = useAppStore()
 const { pickSurfaceClass } = useBackgroundSurface()
 
 const columns: ColumnConfig[] = [
-  { key: 'status', label: '状态', width: '40px', sortable: false },
-  { key: 'os', label: '系统', width: '40px', sortable: false },
+  { key: 'status', label: '状态', width: '40px', sortable: true },
+  { key: 'os', label: '系统', width: '40px', sortable: true },
   { key: 'name', label: '节点', width: 'minmax(160px, 0.8fr)', sortable: true },
   { key: 'tags', label: '标签', width: 'minmax(200px, 1fr)', sortable: false },
   { key: 'uptime', label: '运行时间', width: '116px', sortable: true },
-  { key: 'cpu', label: 'CPU', width: '100px', sortable: false },
-  { key: 'mem', label: '内存', width: '100px', sortable: false },
-  { key: 'disk', label: '硬盘', width: '100px', sortable: false },
-  { key: 'traffic', label: '流量', width: '100px', sortable: false },
+  { key: 'cpu', label: 'CPU', width: '100px', sortable: true },
+  { key: 'mem', label: '内存', width: '100px', sortable: true },
+  { key: 'disk', label: '硬盘', width: '100px', sortable: true },
+  { key: 'traffic', label: '流量', width: '100px', sortable: true },
   { key: 'rate', label: '速率', width: '80px', sortable: true },
 ]
 
