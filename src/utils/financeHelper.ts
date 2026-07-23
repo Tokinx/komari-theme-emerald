@@ -18,6 +18,7 @@ const FINANCE_CURRENCY_CONFIG = {
   ISK: { rate: 18.4626, symbol: 'kr' },
   JPY: { rate: 23.707, symbol: '¥' },
   KRW: { rate: 224.11, symbol: '₩' },
+  KZT: { rate: 64, symbol: '₸' },
   MXN: { rate: 2.5472, symbol: 'Mex$' },
   MYR: { rate: 0.59945, symbol: 'RM' },
   NOK: { rate: 1.4096, symbol: 'kr' },
@@ -25,17 +26,51 @@ const FINANCE_CURRENCY_CONFIG = {
   PHP: { rate: 8.9288, symbol: '₱' },
   PLN: { rate: 0.54138, symbol: 'zł' },
   RON: { rate: 0.66769, symbol: 'lei' },
+  RUB: { rate: 11.9, symbol: '₽' },
   SEK: { rate: 1.3895, symbol: 'kr' },
   SGD: { rate: 0.18975, symbol: 'S$' },
   THB: { rate: 4.8172, symbol: '฿' },
   TRY: { rate: 6.849, symbol: '₺' },
+  UAH: { rate: 3.6, symbol: '₴' },
   USD: { rate: 0.14799, symbol: '$' },
+  VND: { rate: 3500, symbol: '₫' },
   ZAR: { rate: 2.3995, symbol: 'R' },
 } as const
 
 export type CurrencyCode = keyof typeof FINANCE_CURRENCY_CONFIG
 export const SUPPORTED_FINANCE_CURRENCIES = Object.keys(FINANCE_CURRENCY_CONFIG) as CurrencyCode[]
-export const DISPLAY_FINANCE_CURRENCIES = ['CNY', 'USD', 'HKD', 'EUR', 'GBP', 'JPY'] as const satisfies readonly CurrencyCode[]
+export const DISPLAY_FINANCE_CURRENCIES = [
+  'CNY',
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'HKD',
+  'KRW',
+  'RUB',
+  'BRL',
+  'INR',
+  'AUD',
+  'CAD',
+  'SGD',
+  'THB',
+  'VND',
+  'MYR',
+  'PHP',
+  'IDR',
+  'NZD',
+  'SEK',
+  'NOK',
+  'DKK',
+  'PLN',
+  'CZK',
+  'HUF',
+  'TRY',
+  'ZAR',
+  'KZT',
+  'UAH',
+  'CHF',
+] as const satisfies readonly CurrencyCode[]
 export type ExchangeRates = Record<CurrencyCode, number>
 export type ExchangeRateSource = 'cache' | 'network' | 'stale-cache' | 'default'
 
