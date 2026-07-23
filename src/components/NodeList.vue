@@ -42,14 +42,14 @@ const { formatBytes, formatBytesPerSecond, formatUptime } = useNodeFormatters()
 const columns: ColumnConfig[] = [
   { key: 'status', label: '状态', width: '40px', sortable: true },
   { key: 'os', label: '系统', width: '40px', sortable: true },
-  { key: 'name', label: '节点', width: 'minmax(160px, 0.8fr)', sortable: true },
-  { key: 'tags', label: '标签', width: 'minmax(200px, 1fr)', sortable: false },
-  { key: 'uptime', label: '运行时间', width: '116px', sortable: true },
+  { key: 'name', label: '节点', width: 'minmax(180px, 1fr)', sortable: true },
+  { key: 'tags', label: '标签', width: 'minmax(180px, 1fr)', sortable: false },
   { key: 'cpu', label: 'CPU', width: '100px', sortable: true },
   { key: 'mem', label: '内存', width: '100px', sortable: true },
   { key: 'disk', label: '硬盘', width: '100px', sortable: true },
   { key: 'traffic', label: '流量', width: '100px', sortable: true },
   { key: 'rate', label: '速率', width: '80px', sortable: true },
+  { key: 'networks', label: '三网', width: '136px', sortable: false },
 ]
 
 const sortKey = ref<string>('')
@@ -86,7 +86,6 @@ const sortedNodes = computed(() => {
         const vb = (b.name || '').toLowerCase()
         return dir * (va < vb ? -1 : va > vb ? 1 : 0)
       }
-      case 'uptime': return dir * ((a.uptime ?? 0) - (b.uptime ?? 0))
       case 'os': {
         const va = (a.os || '').toLowerCase()
         const vb = (b.os || '').toLowerCase()
@@ -201,6 +200,7 @@ function getRowTransitionStyle(index: number): Record<string, string> {
                   v-if="getPriceTags(node, appStore.lang).length > 0"
                   class="text-[11px] text-muted-foreground/70 truncate"
                 >
+                  {{ formatUptime(node.uptime ?? 0) }}
                   <span v-for="(tag, tagIndex) in getPriceTags(node, appStore.lang)" :key="tagIndex" :class="[!!tagIndex && 'ml-1']">
                     <template v-if="tag.highlightValue">
                       <span>{{ tag.prefix }}</span>
@@ -226,11 +226,8 @@ function getRowTransitionStyle(index: number): Record<string, string> {
                 </div>
               </div>
 
-              <!-- 运行时间 -->
-              <div v-else-if="col.key === 'uptime'" class="flex flex-col gap-0.5">
-                <span class="text-[10px] text-muted-foreground truncate">
-                  {{ formatUptime(node.uptime ?? 0) }}
-                </span>
+              <!-- 三网 -->
+              <div v-else-if="col.key === 'networks'" class="flex flex-col gap-0.5">
                 <NodePingListCell
                   :uuid="node.uuid"
                   :online="node.online"
