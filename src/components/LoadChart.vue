@@ -307,7 +307,7 @@ function formatTime(time: string, showDate: boolean): string {
   if (showDate) {
     return date.format('M/D HH:mm')
   }
-  return date.format('HH:mm')
+  return date.format(isRealtime.value ? 'HH:mm:ss' : 'HH:mm')
 }
 
 function formatTimeForTooltip(time: string, hours: number): string {
@@ -328,6 +328,7 @@ const baseXAxisConfig = computed(() => ({
     fontSize: 11,
     color: chartThemeColors.value.textSecondary,
     margin: 12,
+    hideOverlap: true,
   },
   axisLine: {
     show: true,
@@ -351,6 +352,11 @@ const baseYAxisConfig = computed(() => ({
       color: chartThemeColors.value.splitLineColor,
       type: 'dashed' as const,
     },
+  },
+  axisPointer: {
+    lineStyle: { opacity: 0 },
+    crossStyle: { opacity: 0 },
+    label: { show: false },
   },
 }))
 
@@ -577,7 +583,6 @@ const diskChartOption = computed(() => ({
       name: '磁盘已用',
       type: 'line',
       data: chartData.value.map(r => r.disk ?? 0),
-
       showSymbol: false,
       lineStyle: { width: 1.5, color: chartColors.tertiary, cap: 'round' as const },
       areaStyle: {
@@ -644,7 +649,7 @@ const networkChartOption = computed(() => ({
     nameTextStyle: { color: chartThemeColors.value.textSecondary, padding: [0, 40, 0, 0] },
     axisLabel: {
       ...baseYAxisConfig.value.axisLabel,
-      formatter: (val: number) => formatBytes(val),
+      formatter: (val: number) => `${formatBytes(val)}/s`,
     },
   },
   series: [
