@@ -1,11 +1,12 @@
 /**
- * Emerald does not ship a Service Worker. Komari's default-theme PWA still
- * registers one from `/admin` (scope `/`), and a misconfigured navigation
- * fallback can serve this theme's shell for `/admin` / `/terminal` — which
- * then mounts with no matching routes and shows a blank page (#44).
+ * Emerald does not ship a Service Worker. Komari's default-theme PWA can still
+ * register one from `/admin` (scope `/`). A misconfigured navigation fallback
+ * may then serve this theme's shell for `/admin` / `/terminal`, which mounts
+ * with no matching routes and shows a blank page (#44).
  *
- * Tear down any leftover SW (+ caches). If we somehow booted on a system
- * route, reload once so the real admin/terminal UI can load from network.
+ * Only self-heal when we detect that mismatch. Do not unregister or clear
+ * caches on normal theme routes — wiping Cache Storage during boot races with
+ * in-flight module loads and can white-screen the homepage.
  */
 const RELOAD_FLAG = 'emerald-sw-guard-reload'
 
@@ -35,13 +36,13 @@ async function clearServiceWorkersAndCaches(): Promise<boolean> {
 }
 
 export async function ensureServiceWorkerDoesNotHijack(): Promise<void> {
-  const onSystemRoute = isSystemRoute(location.pathname)
-
-  if (!onSystemRoute)
+  if (!isSystemRoute(location.pathname)) {
     sessionStorage.removeItem(RELOAD_FLAG)
+    return
+  }
 
   const cleared = await clearServiceWorkersAndCaches()
-  if (!cleared || !onSystemRoute)
+  if (!cleared)
     return
 
   if (sessionStorage.getItem(RELOAD_FLAG)) {
